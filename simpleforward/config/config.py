@@ -9,6 +9,8 @@ from .models import *
 class Config(BaseModel):
     bot: Bot = Bot()
     forwarding: Forwarding = Forwarding()
+    openai: OpenAI = OpenAI()
+    moderation: Moderation = Moderation()
     logging: Logging = Logging()
 
     @classmethod
