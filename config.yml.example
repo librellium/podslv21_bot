@@ -2,8 +2,8 @@ bot:
   token: null
   timeout: 10
 forwarding:
-  intermediate_chat_id: null
-  target_chat_id: null
+  moderation_chat_id: null
+  publication_chat_id: null
   message_template: "<b>Сообщение из предложки</b>\n\n<blockquote>{text}</blockquote>"
   types:
   - text
