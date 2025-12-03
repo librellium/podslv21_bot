@@ -7,7 +7,8 @@ from aiogram.enums import ChatType
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from aiogram.types import InputMediaPhoto, InputMediaVideo, Message
 
-from podslv21_bot.bot.message_manager import MessageManager
+from podslv21_bot.bot.utils.message_manager import MessageManager
+from podslv21_bot.bot.utils.template_renderer import TemplateRenderer
 from podslv21_bot.config import Config
 from podslv21_bot.moderation import ModerationExecutor
 
@@ -16,12 +17,14 @@ class MediaRouter(Router):
     def __init__(self,
                  config: Config,
                  message_manager: MessageManager,
-                 executor: Optional[ModerationExecutor] = None):
+                 template_renderer: TemplateRenderer,
+                 moderation_executor: Optional[ModerationExecutor] = None):
         super().__init__()
 
         self.config = config
         self.message_manager = message_manager
-        self.executor = executor
+        self.renderer = template_renderer
+        self.executor = moderation_executor
 
         self.media_groups: Dict[int, List[str]] = {}
         self.media_groups_tasks: Dict[int, asyncio.Task] = {}
@@ -75,7 +78,9 @@ class MediaRouter(Router):
                             self.config.forwarding.moderation_chat_id: True
                         }
 
-                        sent_message = await message.answer("Сообщение отправлено на модерацию...")
+                        sent_message = await message.answer(
+                            await self.renderer.render("messages/moderation/pending.j2", message)
+                        )
                         if len(messages) > 1:
                             media = []
                             for msg in messages:
@@ -85,7 +90,11 @@ class MediaRouter(Router):
                                             if event.result.status == "PASS":
                                                 moderation_passed = True
                                             elif event.result.status == "REJECT":
-                                                await sent_message.edit_text("Сообщение не прошло модерацию.")
+                                                await message.answer(
+                                                    await self.renderer.render("messages/moderation/rejected.j2", message)
+                                                )
+
+                                    await sent_message.delete()
 
                                 media.append(get_media(msg))
 
@@ -110,7 +119,11 @@ class MediaRouter(Router):
                                         if event.result.status == "PASS":
                                             moderation_passed = True
                                         elif event.result.status == "REJECT":
-                                            await sent_message.edit_text("Сообщение не прошло модерацию.")
+                                            await message.answer(
+                                                await self.renderer.render("messages/moderation/rejected.j2", message)
+                                            )
+
+                                await sent_message.delete()
 
                             targets[self.config.forwarding.publication_chat_id] = False
 
@@ -130,9 +143,13 @@ class MediaRouter(Router):
 
                         self.message_manager.add(reply_to_message_id, group_message_id, message.chat.id)
                         if moderation_passed:
-                            await message.answer("Сообщение успешно отправлено!")
+                            await message.answer(
+                                await self.renderer.render("messages/send/success.j2", message)
+                            )
                 except (TelegramBadRequest, TelegramForbiddenError) as e:
-                    await message.answer(f'Не удалось отправить сообщение: "{e}"')
+                    await message.answer(
+                        await self.renderer.render("messages/send/success.j2", message)
+                    )
 
             media_group_id = message.media_group_id
 
