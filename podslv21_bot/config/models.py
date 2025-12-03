@@ -2,6 +2,7 @@ from typing import List, Literal, Optional, TypeAlias
 
 from pydantic import BaseModel, SecretStr
 
+ForwardingMode: TypeAlias = Literal["both", "moderation", "publication"]
 ForwardingType: TypeAlias = Literal["text", "photo", "video"]
 ModerationType: TypeAlias = Literal["gpt"]
 LoggingLevel: TypeAlias = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -11,6 +12,7 @@ class Bot(BaseModel):
     timeout: int = 10
 
 class Forwarding(BaseModel):
+    mode: Optional[ForwardingMode] = "both"
     moderation_chat_id: Optional[int] = None
     publication_chat_id: Optional[int] = None
     message_template: str = "🔔 У вас новое сообщение!\n\n<blockquote>{text}</blockquote>"
