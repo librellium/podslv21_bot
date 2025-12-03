@@ -1,7 +1,11 @@
 services:
-  simpleforward:
-    build: .
+  bot:
+    image: "anonflow:${APP_VERSION}"
+    build:
+      context: .
+      dockerfile: Dockerfile
     labels:
+      version: "${APP_VERSION}"
       description: "Telegram-бот для анонимных сообщений"
     volumes:
       - ./config.yml:/app/config.yml
