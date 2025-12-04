@@ -4,7 +4,6 @@ bot:
 forwarding:
   moderation_chat_id: null
   publication_chat_id: null
-  message_template: "<b>Сообщение из предложки</b>\n\n<blockquote>{text}</blockquote>"
   types:
   - text
   - photo
@@ -17,7 +16,6 @@ moderation:
   enabled: true
   model: gpt-5-mini
   types:
-  - links
   - omni
   - gpt
 logging:
