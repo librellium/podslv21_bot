@@ -31,12 +31,13 @@ class GlobalSlowmodeMiddleware(BaseMiddleware):
         message = self._extract_message(event)
 
         if message:
-            if message.text.startswith("/"):
+            text = message.text or message.caption
+            if text and text.startswith("/"):
                 return await handler(event, data)
 
             if self.lock.locked():
                 await message.answer(
-                    await self.renderer.render("messages/send/busy.j2", message)
+                    await self.renderer.render("messages/users/send/busy.j2", message=message)
                 )
                 return
 
