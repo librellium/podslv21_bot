@@ -47,7 +47,9 @@ class MediaRouter(Router):
                 photos = len([msg for msg in msgs if msg.photo])
                 videos = len([msg for msg in msgs if msg.video])
 
-                return (photos and "photo" in self.config.forwarding.types) or (
+                return (
+                    photos and "photo" in self.config.forwarding.types
+                ) or (
                     videos and "video" in self.config.forwarding.types
                 )
 
@@ -140,12 +142,6 @@ class MediaRouter(Router):
                         self.message_manager.add(
                             reply_to_message_id, group_message_id, message.chat.id
                         )
-                        if moderation_passed:
-                            await message.answer(
-                                await self.renderer.render(
-                                    "messages/users/send/success.j2", message=message
-                                )
-                            )
                 except (TelegramBadRequest, TelegramForbiddenError) as e:
                     await message.answer(
                         await self.renderer.render(

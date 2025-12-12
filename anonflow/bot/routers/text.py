@@ -76,6 +76,7 @@ class TextRouter(Router):
             ):
                 try:
                     group_message_id = None
+
                     targets = {}
                     if moderation_chat_ids:
                         for chat_id in moderation_chat_ids:
