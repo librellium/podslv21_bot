@@ -7,9 +7,9 @@ from aiogram.types import Message
 
 from anonflow.bot.utils.event_handler import EventHandler
 from anonflow.bot.utils.message_manager import MessageManager
-from anonflow.bot.utils.template_renderer import TemplateRenderer
 from anonflow.config import Config
 from anonflow.moderation import ModerationDecisionEvent, ModerationExecutor
+from anonflow.translator import Translator
 
 
 class TextRouter(Router):
@@ -17,7 +17,7 @@ class TextRouter(Router):
         self,
         config: Config,
         message_manager: MessageManager,
-        template_renderer: TemplateRenderer,
+        translator: Translator,
         moderation_executor: Optional[ModerationExecutor] = None,
         event_handler: Optional[EventHandler] = None,
     ):
@@ -25,7 +25,7 @@ class TextRouter(Router):
 
         self.config = config
         self.message_manager = message_manager
-        self.renderer = template_renderer
+        self.translator = translator
         self.executor = moderation_executor
         self.event_handler = event_handler
 
@@ -35,6 +35,8 @@ class TextRouter(Router):
         @self.message(F.text)
         async def on_text(message: Message, bot: Bot):
             reply_to_message = message.reply_to_message
+
+            _ = self.translator.get()
 
             moderation = self.config.moderation.enabled
             moderation_passed = not moderation
@@ -57,15 +59,11 @@ class TextRouter(Router):
                             message.text,
                             reply_to_message_id=reply_to_message_id,
                         )
-                        await message.answer(
-                            await self.renderer.render(
-                                "messages/users/send/success.j2", message=message
-                            )
-                        )
+                        await message.answer(_("messages.user.send_success", message=message))
                     except (TelegramBadRequest, TelegramForbiddenError) as e:
                         await message.answer(
-                            await self.renderer.render(
-                                "messages/users/send/failure.j2",
+                            _(
+                                "messages.user.send_failure",
                                 message=message,
                                 exception=e,
                             )
@@ -96,9 +94,7 @@ class TextRouter(Router):
                         reply_to_message_id = message.message_id
                         msg = await bot.send_message(
                             target,
-                            await self.renderer.render(
-                                "messages/channel/text.j2", message=message
-                            )
+                            _("messages.channel.text", message=message)
                         )
 
                         if save_message_id:
@@ -109,8 +105,8 @@ class TextRouter(Router):
                     )
                 except (TelegramBadRequest, TelegramForbiddenError) as e:
                     await message.answer(
-                        await self.renderer.render(
-                            "messages/users/send/failure.j2",
+                        _(
+                            "messages.user.send_failure",
                             message=message,
                             exception=e,
                         )

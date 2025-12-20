@@ -9,9 +9,9 @@ from aiogram.types import InputMediaPhoto, InputMediaVideo, Message
 
 from anonflow.bot.utils.event_handler import EventHandler
 from anonflow.bot.utils.message_manager import MessageManager
-from anonflow.bot.utils.template_renderer import TemplateRenderer
 from anonflow.config import Config
 from anonflow.moderation import ModerationDecisionEvent, ModerationExecutor
+from anonflow.translator import Translator
 
 
 class MediaRouter(Router):
@@ -19,7 +19,7 @@ class MediaRouter(Router):
         self,
         config: Config,
         message_manager: MessageManager,
-        template_renderer: TemplateRenderer,
+        translator: Translator,
         moderation_executor: Optional[ModerationExecutor] = None,
         event_handler: Optional[EventHandler] = None,
     ):
@@ -27,7 +27,7 @@ class MediaRouter(Router):
 
         self.config = config
         self.message_manager = message_manager
-        self.renderer = template_renderer
+        self.translator = translator
         self.executor = moderation_executor
         self.event_handler = event_handler
 
@@ -54,9 +54,9 @@ class MediaRouter(Router):
                 )
 
             async def get_media(msg: Message):
-                caption = await self.renderer.render(
-                    "messages/channel/media.j2", message=msg
-                )
+                _ = self.translator.get()
+
+                caption = _("messages.channel.media", message=msg)
 
                 if msg.photo and "photo" in self.config.forwarding.types:
                     return InputMediaPhoto(media=msg.photo[-1].file_id, caption=caption)
@@ -69,6 +69,8 @@ class MediaRouter(Router):
 
                 moderation_chat_ids = self.config.forwarding.moderation_chat_ids
                 publication_channel_ids = self.config.forwarding.publication_channel_ids
+
+                _ = self.translator.get()
 
                 reply_to_message_id = messages[0].message_id
 
@@ -130,9 +132,7 @@ class MediaRouter(Router):
                                     await func(
                                         target,
                                         file_id,
-                                        caption=await self.renderer.render(
-                                            "messages/channel/media.j2", message=msg
-                                        ),
+                                        caption=_("messages.channel.media", message=msg),
                                     )
                                 ).message_id
 
@@ -144,8 +144,8 @@ class MediaRouter(Router):
                         )
                 except (TelegramBadRequest, TelegramForbiddenError) as e:
                     await message.answer(
-                        await self.renderer.render(
-                            "messages/users/send/failure.j2",
+                        _(
+                            "messages.user.send_failure",
                             message=message,
                             exception=e,
                         )
