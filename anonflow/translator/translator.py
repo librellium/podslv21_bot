@@ -12,9 +12,16 @@ class Translator:
     def __init__(self):
         self.bot = None
 
-    async def init(self, bot: Optional[Bot]):
-        if bot:
-            self.bot = await bot.get_me()
+    @staticmethod
+    @lru_cache
+    def _get_translator(lang: str):
+        translator = gettext.translation(
+            "messages",
+            paths.TRANSLATIONS_DIR,
+            languages=[lang],
+            fallback=True
+        )
+        return translator
 
     def format(self, text: str, message: Optional[Message], **extra):
         bot = self.bot
@@ -39,17 +46,7 @@ class Translator:
         )
 
     def get(self, lang: Literal["ru"] = "ru"):
-        @lru_cache
-        def get_translator(lang: str):
-            translator = gettext.translation(
-                "messages",
-                paths.TRANSLATIONS_DIR,
-                languages=[lang],
-                fallback=True
-            )
-            return translator
-
-        translator = get_translator(lang)
+        translator = self._get_translator(lang)
 
         def _(msgid: str, message: Optional[Message], **extra):
             return self.format(
@@ -59,3 +56,6 @@ class Translator:
             )
 
         return _
+
+    async def init(self, bot: Optional[Bot]):
+        if bot: self.bot = await bot.get_me()
