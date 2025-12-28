@@ -8,7 +8,7 @@ from yarl import URL
 
 from anonflow.config import Config
 
-from .models import Events, ExecutorDeletionEvent, ModerationDecisionEvent, ModerationStartedEvent
+from anonflow.bot.events.models import Events, ExecutorDeletionEvent, ModerationDecisionEvent, ModerationStartedEvent
 from .planner import ModerationPlanner
 
 
@@ -36,20 +36,20 @@ class ModerationExecutor:
         parsed_url = URL(message_link)
         parsed_path = parsed_url.path.strip("/").split("/")
 
-        publication_chat_id = self.config.forwarding.publication_chat_id
+        publication_channel_ids = self.config.forwarding.publication_channel_ids
 
-        if not publication_chat_id:
+        if not publication_channel_ids:
             return ExecutorDeletionEvent(success=False)
 
         if (
             len(parsed_path) == 3
             and parsed_path[0] == "c"
-            and parsed_path[1].replace("-100", "")
-            == str(publication_chat_id).replace("-100", "")
+            and parsed_path[1] in publication_channel_ids
         ):
+            channel_id = parsed_path[1]
             message_id = parsed_path[2]
             try:
-                await self.bot.delete_message(publication_chat_id, message_id=message_id)
+                await self.bot.delete_message(channel_id, message_id=message_id)
                 return ExecutorDeletionEvent(success=True, message_id=message_id)
             except TelegramBadRequest:
                 return ExecutorDeletionEvent(success=False, message_id=message_id)
@@ -82,10 +82,12 @@ class ModerationExecutor:
             if hasattr(self, func_name) and func_name in function_names:
                 try:
                     self._logger.info(
-                        f"Executing {func_name}({', '.join(map(str, func.get('args')))})"
+                        f"Executing {func_name}({', '.join(map(str, func.get('args', [])))})"
                     )
-                    yield await getattr(self, func_name)(*func.get("args"))
+                    yield await getattr(self, func_name)(*func.get("args", []))
                 except Exception:
                     self._logger.exception(
-                        f"Failed to execute {func_name}({', '.join(map(str, func.get('args')))})"
+                        f"Failed to execute {func_name}({', '.join(map(str, func.get('args', [])))})"
                     )
+            else:
+                self._logger.warning("Function %s not found, skipping.", func_name)

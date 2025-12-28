@@ -1,17 +1,20 @@
-from aiogram import Bot
-from aiogram.types import ChatIdUnion, Message
-from aiogram.exceptions import TelegramBadRequest
 from contextlib import suppress
 from typing import Dict
 
+from aiogram import Bot
+from aiogram.exceptions import TelegramBadRequest
+from aiogram.types import ChatIdUnion, Message, InputMediaPhoto, InputMediaVideo
+
 from anonflow.config import Config
-from anonflow.moderation.models import (
+from anonflow.translator import Translator
+
+from .models import (
+    BotMessagePreparedEvent,
     Events,
     ExecutorDeletionEvent,
     ModerationDecisionEvent,
-    ModerationStartedEvent,
+    ModerationStartedEvent
 )
-from anonflow.translator import Translator
 
 
 class EventHandler:
@@ -23,7 +26,8 @@ class EventHandler:
         self._messages: Dict[ChatIdUnion, Message] = {}
 
     async def handle(self, event: Events, message: Message):
-        moderation_chat_ids = self.config.forwarding.moderation_chat_ids
+        moderation_chat_ids = self.config.forwarding.moderation_chat_ids or ()
+        publication_channel_ids = self.config.forwarding.publication_channel_ids or ()
 
         _ = self.translator.get()
 
@@ -34,7 +38,7 @@ class EventHandler:
         elif isinstance(event, ModerationDecisionEvent):
             for chat_id in moderation_chat_ids:
                 if event.approved:
-                    await message.bot.send_message(
+                    await self.bot.send_message(
                         chat_id,
                         _(
                             "messages.staff.moderation_approved",
@@ -43,7 +47,7 @@ class EventHandler:
                         )
                     )
                 else:
-                    await message.bot.send_message(
+                    await self.bot.send_message(
                         chat_id,
                         _(
                             "messages.staff.moderation_rejected",
@@ -61,10 +65,38 @@ class EventHandler:
                 await message.answer(_("messages.user.send_success", message=message))
             else:
                 await message.answer(_("messages.user.moderation_rejected", message=message))
+        elif isinstance(event, BotMessagePreparedEvent) and publication_channel_ids is not None:
+            for chat_id in publication_channel_ids + moderation_chat_ids:
+                content = event.content
+                if isinstance(content, str):
+                    await self.bot.send_message(
+                        chat_id,
+                        _("messages.channel.text", message=message)
+                    )
+                if isinstance(content, list):
+                    if len(content) > 1:
+                        await self.bot.send_media_group(
+                            chat_id,
+                            content
+                        )
+                    else:
+                        input_media = content[0]
+                        if isinstance(input_media, InputMediaPhoto):
+                            await self.bot.send_photo(
+                                chat_id,
+                                input_media.media,
+                                caption=input_media.caption
+                            )
+                        elif isinstance(input_media, InputMediaVideo):
+                            await self.bot.send_video(
+                                chat_id,
+                                input_media.media,
+                                caption=input_media.caption
+                            )
         elif isinstance(event, ExecutorDeletionEvent) and moderation_chat_ids:
             for chat_id in moderation_chat_ids:
                 if event.success:
-                    await message.bot.send_message(
+                    await self.bot.send_message(
                         chat_id,
                         _(
                             "messages.staff.deletion_success",
@@ -73,7 +105,7 @@ class EventHandler:
                         )
                     )
                 else:
-                    await message.bot.send_message(
+                    await self.bot.send_message(
                         chat_id,
                         _(
                             "messages.staff.deletion_failure",

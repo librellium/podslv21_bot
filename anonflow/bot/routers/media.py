@@ -2,15 +2,14 @@ import asyncio
 from asyncio import CancelledError
 from typing import Dict, List, Optional
 
-from aiogram import Bot, F, Router
+from aiogram import F, Router
 from aiogram.enums import ChatType
-from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from aiogram.types import InputMediaPhoto, InputMediaVideo, Message
 
-from anonflow.bot.utils.event_handler import EventHandler
-from anonflow.bot.utils.message_manager import MessageManager
+from anonflow.bot.events.models import BotMessagePreparedEvent, ModerationDecisionEvent
+from anonflow.bot.events.event_handler import EventHandler
 from anonflow.config import Config
-from anonflow.moderation import ModerationDecisionEvent, ModerationExecutor
+from anonflow.moderation import ModerationExecutor
 from anonflow.translator import Translator
 
 
@@ -18,18 +17,16 @@ class MediaRouter(Router):
     def __init__(
         self,
         config: Config,
-        message_manager: MessageManager,
         translator: Translator,
+        event_handler: EventHandler,
         moderation_executor: Optional[ModerationExecutor] = None,
-        event_handler: Optional[EventHandler] = None,
     ):
         super().__init__()
 
         self.config = config
-        self.message_manager = message_manager
         self.translator = translator
-        self.executor = moderation_executor
         self.event_handler = event_handler
+        self.executor = moderation_executor
 
         self.media_groups: Dict[str, List[Message]] = {}
         self.media_groups_tasks: Dict[str, asyncio.Task] = {}
@@ -39,7 +36,7 @@ class MediaRouter(Router):
 
     def _register_handlers(self):
         @self.message(F.photo | F.video)
-        async def on_photo(message: Message, bot: Bot):
+        async def on_photo(message: Message):
             if message.chat.type != ChatType.PRIVATE:
                 return
 
@@ -67,89 +64,24 @@ class MediaRouter(Router):
                 if not messages:
                     return
 
-                moderation_chat_ids = self.config.forwarding.moderation_chat_ids
-                publication_channel_ids = self.config.forwarding.publication_channel_ids
-
                 _ = self.translator.get()
 
-                reply_to_message_id = messages[0].message_id
+                if can_send_media(messages):
+                    moderation = self.config.moderation.enabled
+                    moderation_passed = not moderation
 
-                try:
-                    if can_send_media(messages):
-                        moderation = self.config.moderation.enabled
-                        moderation_passed = not moderation
+                    media = []
+                    for msg in messages:
+                        if moderation and msg.caption:
+                            async for event in self.executor.process_message(msg):
+                                if isinstance(event, ModerationDecisionEvent):
+                                    moderation_passed = event.approved
+                                await self.event_handler.handle(event, message)
 
-                        group_message_id = None
+                        media.append(await get_media(msg))
 
-                        targets = {}
-                        if moderation_chat_ids:
-                            for chat_id in moderation_chat_ids:
-                                targets[chat_id] = True
-
-                        if len(messages) > 1:
-                            media = []
-                            for msg in messages:
-                                if moderation and msg.caption:
-                                    async for event in self.executor.process_message(msg):
-                                        if isinstance(event, ModerationDecisionEvent):
-                                            moderation_passed = event.approved
-                                        await self.event_handler.handle(event, message)
-
-                                media.append(await get_media(msg))
-
-                            if publication_channel_ids and moderation_passed:
-                                for channel_id in publication_channel_ids:
-                                    targets[channel_id] = False
-
-                            for target, save_message_id in targets.items():
-                                messages = await bot.send_media_group(target, media)
-
-                                if save_message_id:
-                                    group_message_id = messages[0].message_id
-                        elif len(messages) == 1:
-                            msg = messages[0]
-                            caption = msg.caption
-
-                            if moderation and caption:
-                                async for event in self.executor.process_message(msg):
-                                    if isinstance(event, ModerationDecisionEvent):
-                                        moderation_passed = event.approved
-                                    await self.event_handler.handle(event, message)
-
-                            if publication_channel_ids and moderation_passed:
-                                for channel_id in publication_channel_ids:
-                                    targets[channel_id] = False
-
-                            func = bot.send_photo if msg.photo else bot.send_video
-                            file_id = (
-                                msg.photo[-1].file_id
-                                if msg.photo
-                                else msg.video.file_id
-                            )
-
-                            for target, save_message_id in targets.items():
-                                msg_id = (
-                                    await func(
-                                        target,
-                                        file_id,
-                                        caption=_("messages.channel.media", message=msg),
-                                    )
-                                ).message_id
-
-                                if save_message_id:
-                                    group_message_id = msg_id
-
-                        self.message_manager.add(
-                            reply_to_message_id, group_message_id, message.chat.id
-                        )
-                except (TelegramBadRequest, TelegramForbiddenError) as e:
-                    await message.answer(
-                        _(
-                            "messages.user.send_failure",
-                            message=message,
-                            exception=e,
-                        )
-                    )
+                    if moderation_passed:
+                        await self.event_handler.handle(BotMessagePreparedEvent(media), messages[0])
 
             media_group_id = message.media_group_id
 

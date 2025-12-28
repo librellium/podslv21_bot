@@ -5,7 +5,6 @@ from aiogram.client.bot import DefaultBotProperties
 
 from anonflow.bot import (
     EventHandler,
-    MessageManager,
     GlobalSlowmodeMiddleware,
     SubscriptionMiddleware,
     UserSlowmodeMiddleware,
@@ -23,51 +22,32 @@ from . import paths
 
 
 class NotInitializedError(Exception): ...
-class BotNotInitializedError(NotInitializedError): ...
-class ConfigNotInitializedError(NotInitializedError): ...
-class TranslatorNotInitializedError(NotInitializedError): ...
-class ModerationNotInitializedError(NotInitializedError): ...
 
 
 class Application:
     def __init__(self):
         self.bot = None
         self.dispatcher = None
-        self.message_manager = None
         self.config = None
         self.translator = None
         self.executor = None
         self.event_handler = None
 
-    def get_bot(self):
-        if self.bot is None:
-            raise BotNotInitializedError()
+    _essential_components = frozenset({
+        "bot",
+        "dispatcher",
+        "config",
+        "translator",
+        "event_handler"
+    })
+    def __getattribute__(self, name: str, /):
+        if name in object.__getattribute__(self, "_essential_components"):
+            obj = object.__getattribute__(self, name)
+            if obj is None:
+                raise NotInitializedError(name)
+            return obj
 
-        return self.bot
-
-    def get_dispatcher(self):
-        if self.dispatcher is None:
-            raise BotNotInitializedError()
-
-        return self.dispatcher
-
-    def get_message_manager(self):
-        if self.message_manager is None:
-            raise BotNotInitializedError()
-
-        return self.message_manager
-
-    def get_config(self):
-        if self.config is None:
-            raise ConfigNotInitializedError()
-
-        return self.config
-
-    def get_translator(self):
-        if self.translator is None:
-            raise TranslatorNotInitializedError()
-
-        return self.translator
+        return object.__getattribute__(self, name)
 
     def _init_config(self):
         config_filepath = paths.CONFIG_FILEPATH
@@ -78,103 +58,112 @@ class Application:
         self.config = Config.load(config_filepath)
 
     def _init_logging(self):
-        config = self.get_config()
+        config = self.config
 
         logging.basicConfig(
-            format=config.logging.fmt,
-            datefmt=config.logging.date_fmt,
-            level=config.logging.level,
+            format=config.logging.fmt, # type: ignore
+            datefmt=config.logging.date_fmt, # type: ignore
+            level=config.logging.level, # type: ignore
         )
 
     def _init_bot(self):
-        config = self.get_config()
+        config = self.config
 
-        if not config.bot.token:
-            raise ValueError()
+        bot_token = config.bot.token # type: ignore
+        if not bot_token:
+            raise ValueError("bot.token is required and cannot be empty")
 
         self.bot = Bot(
-            token=config.bot.token.get_secret_value(),
+            token=bot_token.get_secret_value(),
             default=DefaultBotProperties(parse_mode="HTML")
         )
         self.dispatcher = Dispatcher()
-
-        self.message_manager = MessageManager()
-
-    def _postinit_bot(self):
-        dispatcher, config, translator = (
-            self.get_dispatcher(),
-            self.get_config(),
-            self.get_translator()
-        )
-
-        if config.behavior.subscription_requirement.enabled:
-            dispatcher.update.middleware(
-                SubscriptionMiddleware(
-                    channel_ids=config.forwarding.publication_channel_ids,
-                    translator=translator
-                )
-            )
-
-        if config.behavior.slowmode.enabled:
-            slowmode_map = {
-                "global": GlobalSlowmodeMiddleware,
-                "user": UserSlowmodeMiddleware
-            }
-            dispatcher.update.middleware(
-                slowmode_map[config.behavior.slowmode.mode](
-                    delay=config.behavior.slowmode.delay,
-                    translator=translator,
-                    allowed_chat_ids=config.forwarding.moderation_chat_ids
-                )
-            )
 
     async def _init_translator(self):
         self.translator = Translator()
         await self.translator.init(self.bot)
 
-    def _init_moderation(self):
-        bot = self.get_bot()
-        config = self.get_config()
-        translator = self.get_translator()
+    def _postinit_bot(self):
+        dispatcher, config, translator = (
+            self.dispatcher,
+            self.config,
+            self.translator
+        )
 
-        if config.moderation.enabled:
+        if config.behavior.subscription_requirement.enabled: # type: ignore
+            dispatcher.update.middleware( # type: ignore
+                SubscriptionMiddleware(
+                    channel_ids=config.forwarding.publication_channel_ids, # type: ignore
+                    translator=translator # type: ignore
+                )
+            )
+
+        if config.behavior.slowmode.enabled: # type: ignore
+            slowmode_map = {
+                "global": GlobalSlowmodeMiddleware,
+                "user": UserSlowmodeMiddleware
+            }
+            dispatcher.update.middleware( # type: ignore
+                slowmode_map[config.behavior.slowmode.mode]( # type: ignore
+                    delay=config.behavior.slowmode.delay, # type: ignore
+                    translator=translator,
+                    allowed_chat_ids=config.forwarding.moderation_chat_ids # type: ignore
+                )
+            )
+
+    def _init_event_handler(self):
+        bot, config, translator = (
+            self.bot,
+            self.config,
+            self.translator
+        )
+
+        self.event_handler = EventHandler(bot=bot, config=config, translator=translator) # type: ignore
+
+    def _init_moderation(self):
+        bot, config = (
+            self.bot,
+            self.config
+        )
+
+        if config.moderation.enabled: # type: ignore
             self.rule_manager = RuleManager(rules_dir=paths.RULES_DIR)
             self.rule_manager.reload()
 
-            self.planner = ModerationPlanner(config=config, rule_manager=self.rule_manager)
+            self.planner = ModerationPlanner(config=config, rule_manager=self.rule_manager) # type: ignore
             self.executor = ModerationExecutor(
-                config=config,
-                bot=bot,
+                config=config, # type: ignore
+                bot=bot, # type: ignore
                 planner=self.planner
             )
-            self.event_handler = EventHandler(bot=bot, config=config, translator=translator)
 
     async def init(self):
         self._init_config()
         self._init_logging()
         self._init_bot()
         await self._init_translator()
+        self._postinit_bot()
+        self._init_event_handler()
         self._init_moderation()
 
     async def run(self):
         await self.init()
 
-        bot, dispatcher, config, translator, message_manager = (
-            self.get_bot(),
-            self.get_dispatcher(),
-            self.get_config(),
-            self.get_translator(),
-            self.get_message_manager()
+        bot, dispatcher, config, translator, event_handler = (
+            self.bot,
+            self.dispatcher,
+            self.config,
+            self.translator,
+            self.event_handler
         )
 
-        dispatcher.include_router(
+        dispatcher.include_router( # type: ignore
             build(
-                config=config,
-                message_manager=message_manager,
-                translator=translator,
+                config=config, # type: ignore
+                translator=translator, # type: ignore
+                event_handler=event_handler, # type: ignore
                 executor=self.executor,
-                event_handler=self.event_handler
             )
         )
 
-        await dispatcher.start_polling(bot)
+        await dispatcher.start_polling(bot) # type: ignore

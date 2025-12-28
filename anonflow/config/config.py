@@ -3,19 +3,17 @@ from pathlib import Path
 import yaml
 from pydantic import BaseModel, SecretStr
 
-from .models import Config as MainConfig
+from .models import Behavior, Bot, Forwarding, Logging, Moderation, OpenAI
 
 
 class Config(BaseModel):
-    config: MainConfig = MainConfig()
-
-    def __getattr__(self, name: str, /):
-        config = object.__getattribute__(self, "config")
-
-        if name in config.model_fields:
-            return object.__getattribute__(config, name)
-
-        return object.__getattribute__(self, name)
+    bot: Bot = Bot()
+    behavior: Behavior = Behavior()
+    forwarding: Forwarding = Forwarding()
+    openai: OpenAI = OpenAI()
+    moderation: Moderation = Moderation()
+    logging: Logging = Logging()
+    model_config = {"frozen": True}
 
     @classmethod
     def _serialize(cls, obj):
@@ -36,16 +34,16 @@ class Config(BaseModel):
         if filepath.exists():
             with filepath.open(encoding="utf-8") as f:
                 data = yaml.safe_load(f) or {}
-            return cls(config=MainConfig(**data))
+            return cls(**data) # type: ignore
 
-        return cls(config=MainConfig())
+        return cls()
 
     def save(self, filepath: Path):
         filepath.parent.mkdir(parents=True, exist_ok=True)
 
         with filepath.open("w", encoding="utf-8") as config_file:
             yaml.dump(
-                self._serialize(self.config.model_dump()),
+                self._serialize(self.model_dump()),
                 config_file,
                 width=float("inf"),
                 sort_keys=False,

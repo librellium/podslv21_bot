@@ -18,8 +18,12 @@ class ModerationPlanner:
         self.config = config
         self.rule_manager = rule_manager
 
+        api_key = self.config.openai.api_key
+        if not api_key:
+            raise ValueError("openai.api_key is required and cannot be empty")
+
         self._client = AsyncOpenAI(
-            api_key=self.config.openai.api_key.get_secret_value(),
+            api_key=api_key.get_secret_value(),
             timeout=self.config.openai.timeout,
             max_retries=self.config.openai.max_retries,
         )

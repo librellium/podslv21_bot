@@ -6,16 +6,15 @@ from anonflow.config import Config
 from anonflow.moderation import ModerationExecutor
 from anonflow.translator import Translator
 
+from .events import EventHandler
 from .routers import InfoRouter, MediaRouter, StartRouter, TextRouter
-from .utils import EventHandler, MessageManager
 
 
 def build(
     config: Config,
-    message_manager: MessageManager,
     translator: Translator,
+    event_handler: EventHandler,
     executor: Optional[ModerationExecutor] = None,
-    event_handler: Optional[EventHandler] = None
 ):
     main_router = Router()
 
@@ -24,17 +23,15 @@ def build(
         InfoRouter(translator=translator),
         TextRouter(
             config=config,
-            message_manager=message_manager,
             translator=translator,
-            moderation_executor=executor,
             event_handler=event_handler,
+            moderation_executor=executor,
         ),
         MediaRouter(
             config=config,
-            message_manager=message_manager,
             translator=translator,
-            moderation_executor=executor,
             event_handler=event_handler,
+            moderation_executor=executor,
         ),
     )
 
