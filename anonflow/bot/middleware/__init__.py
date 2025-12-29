@@ -1,5 +1,4 @@
-from .global_slowmode import GlobalSlowmodeMiddleware
+from .slowmode import SlowmodeMiddleware
 from .subscription import SubscriptionMiddleware
-from .user_slowmode import UserSlowmodeMiddleware
 
-__all__ = ["GlobalSlowmodeMiddleware", "SubscriptionMiddleware", "UserSlowmodeMiddleware"]
+__all__ = ["SlowmodeMiddleware", "SubscriptionMiddleware",]

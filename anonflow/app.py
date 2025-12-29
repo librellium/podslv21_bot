@@ -5,9 +5,8 @@ from aiogram.client.bot import DefaultBotProperties
 
 from anonflow.bot import (
     EventHandler,
-    GlobalSlowmodeMiddleware,
+    SlowmodeMiddleware,
     SubscriptionMiddleware,
-    UserSlowmodeMiddleware,
     build
 )
 from anonflow.config import Config
@@ -99,14 +98,10 @@ class Application:
             )
 
         if config.behavior.slowmode.enabled: # type: ignore
-            slowmode_map = {
-                "global": GlobalSlowmodeMiddleware,
-                "user": UserSlowmodeMiddleware
-            }
             dispatcher.update.middleware( # type: ignore
-                slowmode_map[config.behavior.slowmode.mode]( # type: ignore
+                SlowmodeMiddleware(
                     delay=config.behavior.slowmode.delay, # type: ignore
-                    translator=translator,
+                    translator=translator, # type: ignore
                     allowed_chat_ids=config.forwarding.moderation_chat_ids # type: ignore
                 )
             )

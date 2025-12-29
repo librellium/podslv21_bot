@@ -1,11 +1,10 @@
 from .builder import build
 from .events import EventHandler
-from .middleware import GlobalSlowmodeMiddleware, SubscriptionMiddleware, UserSlowmodeMiddleware
+from .middleware import SlowmodeMiddleware, SubscriptionMiddleware
 
 __all__ = [
     "build",
     "EventHandler",
-    "GlobalSlowmodeMiddleware",
+    "SlowmodeMiddleware",
     "SubscriptionMiddleware",
-    "UserSlowmodeMiddleware",
 ]

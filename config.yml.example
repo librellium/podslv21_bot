@@ -4,7 +4,6 @@ bot:
 behavior:
   slowmode:
     enabled: true
-    mode: user
     delay: 120
   subscription_requirement:
     enabled: false

@@ -16,7 +16,6 @@ class Bot(BaseModel):
 
 class BehaviorSlowmode(BaseModel):
     enabled: bool = True
-    mode: SlowmodeMode = "user"
     delay: float = 120
     model_config = {"frozen": True}
 
