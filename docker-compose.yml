@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     labels:
-      version: "${VERSION}"
+      org.opencontainers.image.version: "${VERSION:?VERSION is not set. Use 'python manage.py deploy'}"
     volumes:
       - ./rules/:/app/rules/
       - ./config.yml:/app/config.yml
