@@ -30,6 +30,7 @@ class Application:
         self.bot = None
         self.dispatcher = None
         self.config = None
+        self.database = None
         self.translator = None
         self.executor = None
         self.event_handler = None
@@ -157,10 +158,11 @@ class Application:
     async def run(self):
         await self.init()
 
-        bot, dispatcher, config, translator, event_handler = (
+        bot, dispatcher, config, database, translator, event_handler = (
             self.bot,
             self.dispatcher,
             self.config,
+            self.database,
             self.translator,
             self.event_handler
         )
@@ -168,6 +170,7 @@ class Application:
         dispatcher.include_router( # type: ignore
             build(
                 config=config, # type: ignore
+                database=database, # type: ignore
                 translator=translator, # type: ignore
                 event_handler=event_handler, # type: ignore
                 executor=self.executor,
@@ -177,4 +180,4 @@ class Application:
         try:
             await dispatcher.start_polling(bot) # type: ignore
         finally:
-            await self.database.close()
+            await self.database.close() # type: ignore
