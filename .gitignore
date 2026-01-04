@@ -224,3 +224,7 @@ config.yml
 # Rules
 rules/*
 !rules/.gitkeep
+
+# Database
+anonflow.db
+anonflow/database/migrations/versions
