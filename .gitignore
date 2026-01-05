@@ -227,4 +227,4 @@ rules/*
 
 # Database
 anonflow.db
-anonflow/database/migrations/versions
+anonflow/database/migrations/versions/*.py
