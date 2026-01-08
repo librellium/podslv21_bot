@@ -1,5 +1,5 @@
+from .prepost import PrePostMiddleware
 from .slowmode import SlowmodeMiddleware
-from .post_command import PostCommandMiddleware
 from .subscription import SubscriptionMiddleware
 
-__all__ = ["PostCommandMiddleware", "SlowmodeMiddleware", "SubscriptionMiddleware",]
+__all__ = ["PrePostMiddleware", "SubscriptionMiddleware", "SlowmodeMiddleware"]

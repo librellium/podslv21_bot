@@ -1,6 +1,6 @@
 import asyncio
 from asyncio import CancelledError
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from aiogram import F, Router
 from aiogram.enums import ChatType
@@ -33,7 +33,7 @@ class MediaRouter(Router):
         self.event_handler = event_handler
         self.executor = moderation_executor
 
-        self.media_groups: Dict[str, List[Message]] = {}
+        self.media_groups: Dict[str, List[Tuple[Message, bool]]] = {}
         self.media_groups_tasks: Dict[str, asyncio.Task] = {}
         self.media_groups_lock = asyncio.Lock()
 
@@ -46,7 +46,7 @@ class MediaRouter(Router):
                 for msg in msgs
             )
 
-        def get_media(message: Message, caption: str):
+        def get_media(message: Message, caption: Optional[str] = None):
             if message.photo and "photo" in self.config.forwarding.types:
                 return InputMediaPhoto(media=message.photo[-1].file_id, caption=caption)
             elif message.video and "video" in self.config.forwarding.types:
@@ -59,19 +59,22 @@ class MediaRouter(Router):
             if can_send_media(messages):
                 moderation = self.config.moderation.enabled
                 moderation_approved = not moderation
+                _ = self.translator.get()
 
                 content = []
-                for message in messages:
+                for index, message in enumerate(messages):
                     msg = utils.strip_post_command(message)
-                    if moderation and is_post and msg.caption:
+                    if moderation and is_post:
                         async for event in self.executor.process_message(msg): # type: ignore
                             if isinstance(event, ModerationDecisionEvent):
-                                moderation_approved = moderation_approved and event.approved
+                                moderation_approved = event.approved
                             await self.event_handler.handle(event, msg)
 
-                    _ = self.translator.get()
-                    caption = _("messages.channel.media", message=msg) if is_post else (msg.caption or "")
-                    content.append(get_media(msg, caption))
+                    if index == 0:
+                        caption = _("messages.channel.media", message=msg) if is_post else (msg.caption or "")
+                        content.append(get_media(msg, caption))
+                    else:
+                        content.append(get_media(msg))
 
                 await self.event_handler.handle(
                     BotMessagePreparedEvent(content, is_post, moderation_approved),
@@ -89,15 +92,22 @@ class MediaRouter(Router):
                 try:
                     await asyncio.sleep(2)
                     async with self.media_groups_lock:
-                        messages = self.media_groups.pop(media_group_id, []) # type: ignore
+                        items = self.media_groups.pop(media_group_id, []) # type: ignore
                         self.media_groups_tasks.pop(media_group_id, None) # type: ignore
-                    await process_messages(messages, is_post)
+
+                        messages = []
+                        final_is_post = False
+                        for item in items:
+                            messages.append(item[0])
+                            final_is_post = final_is_post or item[1]
+
+                    await process_messages(messages, final_is_post)
                 except CancelledError:
                     pass
 
             if media_group_id:
                 async with self.media_groups_lock:
-                    self.media_groups.setdefault(media_group_id, []).append(message)
+                    self.media_groups.setdefault(media_group_id, []).append((message, is_post))
 
                     task = self.media_groups_tasks.get(media_group_id)
                     if task:

@@ -30,33 +30,31 @@ class SlowmodeMiddleware(BaseMiddleware):
 
         if isinstance(message, Message) and message.chat.id not in self.allowed_chat_ids:
             text = message.text or message.caption
-            if text and not text.startswith("/post"):
-                return await handler(event, data)
+            if text and text.startswith("/post"):
+                async with self.lock:
+                    user_lock = self.user_locks.setdefault(message.chat.id, asyncio.Lock())
 
-            async with self.lock:
-                user_lock = self.user_locks.setdefault(message.chat.id, asyncio.Lock())
+                if user_lock.locked():
+                    start_time = self.user_times.get(message.chat.id) or 0
+                    current_time = time.monotonic()
 
-            if user_lock.locked():
-                start_time = self.user_times.get(message.chat.id) or 0
-                current_time = time.monotonic()
-
-                await message.answer(
-                    _(
-                        "messages.user.send_busy",
-                        message=message,
-                        remaining=round(self.delay - (current_time - start_time)) if start_time else None
+                    await message.answer(
+                        _(
+                            "messages.user.send_busy",
+                            message=message,
+                            remaining=round(self.delay - (current_time - start_time)) if start_time else None
+                        )
                     )
-                )
-                return
+                    return
 
-            async with user_lock:
-                self.user_times[message.chat.id] = time.monotonic()
-                result = await handler(event, data)
-                await asyncio.sleep(self.delay)
+                async with user_lock:
+                    self.user_times[message.chat.id] = time.monotonic()
+                    result = await handler(event, data)
+                    await asyncio.sleep(self.delay)
 
-            async with self.lock:
-                self.user_locks.pop(message.chat.id)
+                async with self.lock:
+                    self.user_locks.pop(message.chat.id)
 
-            return result
+                return result
 
         return await handler(event, data)

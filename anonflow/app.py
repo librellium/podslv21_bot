@@ -5,8 +5,8 @@ from aiogram.client.bot import DefaultBotProperties
 
 from anonflow.bot import (
     EventHandler,
+    PrePostMiddleware,
     SlowmodeMiddleware,
-    PostCommandMiddleware,
     SubscriptionMiddleware,
     build
 )
@@ -116,7 +116,7 @@ class Application:
             )
 
         dispatcher.update.middleware( # type: ignore
-            PostCommandMiddleware()
+            PrePostMiddleware()
         )
 
     def _init_event_handler(self):
