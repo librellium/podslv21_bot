@@ -1,6 +1,6 @@
 import asyncio
 import time
-from typing import Dict, List, Optional
+from typing import Dict, Iterable, Optional
 
 from aiogram import BaseMiddleware
 from aiogram.types import ChatIdUnion, Message
@@ -10,8 +10,8 @@ from anonflow.translator import Translator
 from .utils import extract_message
 
 
-class SlowmodeMiddleware(BaseMiddleware):
-    def __init__(self, delay: float, translator: Translator, allowed_chat_ids: Optional[List[ChatIdUnion]] = []):
+class ThrottlingMiddleware(BaseMiddleware):
+    def __init__(self, delay: float, translator: Translator, allowed_chat_ids: Optional[Iterable[ChatIdUnion]]):
         super().__init__()
 
         self.delay = delay
@@ -48,9 +48,13 @@ class SlowmodeMiddleware(BaseMiddleware):
                     return
 
                 async with user_lock:
-                    self.user_times[message.chat.id] = time.monotonic()
+                    start_time = time.monotonic()
+                    self.user_times[message.chat.id] = start_time
+
                     result = await handler(event, data)
-                    await asyncio.sleep(self.delay)
+
+                    elapsed_time = time.monotonic() - start_time
+                    await asyncio.sleep(max(0, self.delay - elapsed_time))
 
                 async with self.lock:
                     self.user_locks.pop(message.chat.id)
