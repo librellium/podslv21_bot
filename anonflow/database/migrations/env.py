@@ -4,6 +4,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from anonflow import paths
+from anonflow.config import Config
 from anonflow.database.base import Base
 
 # this is the Alembic Config object, which provides
@@ -25,9 +26,10 @@ target_metadata = Base.metadata
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
+app_config = Config.load(paths.CONFIG_FILEPATH)
 config.set_main_option(
     "sqlalchemy.url",
-    f"sqlite:///{paths.DATABASE_FILEPATH}"
+    app_config.get_migrations_url().render_as_string(hide_password=False)
 )
 
 
