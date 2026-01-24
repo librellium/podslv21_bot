@@ -8,6 +8,11 @@ behavior:
   subscription_requirement:
     enabled: false
     channel_ids: null
+database:
+  backend: sqlite+aiosqlite
+  name_or_path: //home/user/anonflow.db
+  migrations:
+    backend: sqlite
 forwarding:
   moderation_chat_ids: null
   publication_channel_ids: null

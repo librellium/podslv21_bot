@@ -1,5 +1,13 @@
+from .blocked import BlockedMiddleware
 from .prepost import PrePostMiddleware
-from .slowmode import SlowmodeMiddleware
+from .registered import RegisteredMiddleware
 from .subscription import SubscriptionMiddleware
+from .throttling import ThrottlingMiddleware
 
-__all__ = ["PrePostMiddleware", "SubscriptionMiddleware", "SlowmodeMiddleware"]
+__all__ = [
+    "BlockedMiddleware",
+    "PrePostMiddleware",
+    "RegisteredMiddleware",
+    "SubscriptionMiddleware",
+    "ThrottlingMiddleware"
+]

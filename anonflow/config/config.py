@@ -1,19 +1,57 @@
 from pathlib import Path
 
 import yaml
+from sqlalchemy.engine import URL
 from pydantic import BaseModel, SecretStr
 
-from .models import Behavior, Bot, Forwarding, Logging, Moderation, OpenAI
+from .models import Behavior, Bot, Database, Forwarding, Logging, Moderation, OpenAI
 
 
 class Config(BaseModel):
     bot: Bot = Bot()
     behavior: Behavior = Behavior()
+    database: Database = Database()
     forwarding: Forwarding = Forwarding()
     openai: OpenAI = OpenAI()
     moderation: Moderation = Moderation()
     logging: Logging = Logging()
     model_config = {"frozen": True}
+
+    def get_database_url(self):
+        password = None
+        if self.database.password:
+            password = (
+                self.database.password.get_secret_value()
+                if isinstance(self.database.password, SecretStr)
+                else self.database.password
+            )
+
+        return URL.create(
+            drivername=self.database.backend,
+            username=self.database.username,
+            password=password,
+            host=self.database.host,
+            port=self.database.port,
+            database=str(self.database.name_or_path),
+        )
+
+    def get_migrations_url(self):
+        password = None
+        if self.database.password:
+            password = (
+                self.database.password.get_secret_value()
+                if isinstance(self.database.password, SecretStr)
+                else self.database.password
+            )
+
+        return URL.create(
+            drivername=self.database.migrations.backend,
+            username=self.database.username,
+            password=password,
+            host=self.database.host,
+            port=self.database.port,
+            database=str(self.database.name_or_path),
+        )
 
     @classmethod
     def _serialize(cls, obj):

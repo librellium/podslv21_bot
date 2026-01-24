@@ -5,13 +5,18 @@ from aiogram.client.bot import DefaultBotProperties
 
 from anonflow.bot import (
     EventHandler,
+    BlockedMiddleware,
     PrePostMiddleware,
-    SlowmodeMiddleware,
+    RegisteredMiddleware,
     SubscriptionMiddleware,
+    ThrottlingMiddleware,
     build
 )
 from anonflow.config import Config
-from anonflow.database import Database
+from anonflow.database import (
+    Database,
+    UserRepository
+)
 from anonflow.moderation import (
     ModerationExecutor,
     ModerationPlanner,
@@ -31,6 +36,7 @@ class Application:
         self.dispatcher = None
         self.config = None
         self.database = None
+        self.user_repository = None
         self.translator = None
         self.executor = None
         self.event_handler = None
@@ -39,8 +45,10 @@ class Application:
         "bot",
         "dispatcher",
         "config",
+        "database",
+        "user_repository",
         "translator",
-        "event_handler"
+        "event_handler",
     })
     def __getattribute__(self, name: str, /):
         if name in object.__getattribute__(self, "_essential_components"):
@@ -60,10 +68,16 @@ class Application:
         self.config = Config.load(config_filepath)
 
     async def _init_database(self):
-        database_filepath = paths.DATABASE_FILEPATH
+        config = self.config
 
-        self.database = Database(database_filepath)
+        self.database = Database(config.get_database_url()) # type: ignore
         await self.database.init()
+
+        self.user_repository = UserRepository(
+            self.database,
+            config.database.repositories.user.cache_size, # type: ignore
+            config.database.repositories.user.cache_ttl # type: ignore
+        )
 
     def _init_logging(self):
         config = self.config
@@ -92,10 +106,18 @@ class Application:
         await self.translator.init(self.bot)
 
     def _postinit_bot(self):
-        dispatcher, config, translator = (
+        dispatcher, config, translator, user_repository = (
             self.dispatcher,
             self.config,
-            self.translator
+            self.translator,
+            self.user_repository
+        )
+
+        dispatcher.update.middleware( # type: ignore
+            BlockedMiddleware(
+                user_repository=user_repository, # type: ignore
+                translator=translator, # type: ignore
+            )
         )
 
         if config.behavior.subscription_requirement.enabled: # type: ignore
@@ -106,10 +128,17 @@ class Application:
                 )
             )
 
-        if config.behavior.slowmode.enabled: # type: ignore
+        dispatcher.update.middleware( # type: ignore
+            RegisteredMiddleware(
+                user_repository=user_repository, # type: ignore
+                translator=translator, # type: ignore
+            )
+        )
+
+        if config.behavior.throttling.enabled: # type: ignore
             dispatcher.update.middleware( # type: ignore
-                SlowmodeMiddleware(
-                    delay=config.behavior.slowmode.delay, # type: ignore
+                ThrottlingMiddleware(
+                    delay=config.behavior.throttling.delay, # type: ignore
                     translator=translator, # type: ignore
                     allowed_chat_ids=config.forwarding.moderation_chat_ids # type: ignore
                 )
@@ -158,11 +187,12 @@ class Application:
     async def run(self):
         await self.init()
 
-        bot, dispatcher, config, database, translator, event_handler = (
+        bot, dispatcher, config, database, user_repository, translator, event_handler = (
             self.bot,
             self.dispatcher,
             self.config,
             self.database,
+            self.user_repository,
             self.translator,
             self.event_handler
         )
@@ -171,6 +201,7 @@ class Application:
             build(
                 config=config, # type: ignore
                 database=database, # type: ignore
+                user_repository=user_repository, # type: ignore
                 translator=translator, # type: ignore
                 event_handler=event_handler, # type: ignore
                 executor=self.executor,
@@ -180,4 +211,5 @@ class Application:
         try:
             await dispatcher.start_polling(bot) # type: ignore
         finally:
-            await self.database.close() # type: ignore
+            await bot.session.close() # type: ignore
+            await database.close() # type: ignore

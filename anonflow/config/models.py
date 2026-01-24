@@ -1,8 +1,8 @@
-from typing import Literal, Optional, Tuple, TypeAlias
+from pathlib import Path
+from typing import Literal, Optional, Tuple, TypeAlias, Union
 
 from pydantic import BaseModel, SecretStr
 
-SlowmodeMode: TypeAlias = Literal["global", "user"]
 ForwardingType: TypeAlias = Literal["text", "photo", "video"]
 ModerationType: TypeAlias = Literal["omni", "gpt"]
 LoggingLevel: TypeAlias = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -14,7 +14,7 @@ class Bot(BaseModel):
     model_config = {"frozen": True}
 
 
-class BehaviorSlowmode(BaseModel):
+class BehaviorThrottling(BaseModel):
     enabled: bool = True
     delay: float = 120
     model_config = {"frozen": True}
@@ -27,8 +27,36 @@ class BehaviorSubscriptionRequirement(BaseModel):
 
 
 class Behavior(BaseModel):
-    slowmode: BehaviorSlowmode = BehaviorSlowmode()
+    throttling: BehaviorThrottling = BehaviorThrottling()
     subscription_requirement: BehaviorSubscriptionRequirement = BehaviorSubscriptionRequirement()
+    model_config = {"frozen": True}
+
+
+class DatabaseRepositoriesUser(BaseModel):
+    cache_size: int = 1024
+    cache_ttl: int = 60
+    model_config = {"frozen": True}
+
+
+class DatabaseRepositories(BaseModel):
+    user: DatabaseRepositoriesUser = DatabaseRepositoriesUser()
+    model_config = {"frozen": True}
+
+
+class DatabaseMigrations(BaseModel):
+    backend: str = "sqlite"
+    model_config = {"frozen": True}
+
+
+class Database(BaseModel):
+    backend: str = "sqlite+aiosqlite"
+    name_or_path: Optional[Union[str, Path]] = None
+    host: Optional[str] = None
+    port: Optional[int] = None
+    username: Optional[str] = None
+    password: Optional[SecretStr] = None
+    repositories: DatabaseRepositories = DatabaseRepositories()
+    migrations: DatabaseMigrations = DatabaseMigrations()
     model_config = {"frozen": True}
 
 
