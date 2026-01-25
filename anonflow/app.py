@@ -1,4 +1,5 @@
 import logging
+from typing import TypeVar, Optional
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.bot import DefaultBotProperties
@@ -29,35 +30,22 @@ from . import paths
 
 class NotInitializedError(Exception): ...
 
+T = TypeVar("T")
+def req(name: str, value: T | None) -> T:
+    if value is None:
+        raise NotInitializedError(name)
+    return value
 
 class Application:
     def __init__(self):
-        self.bot = None
-        self.dispatcher = None
-        self.config = None
-        self.database = None
-        self.user_repository = None
-        self.translator = None
-        self.executor = None
-        self.event_handler = None
-
-    _essential_components = frozenset({
-        "bot",
-        "dispatcher",
-        "config",
-        "database",
-        "user_repository",
-        "translator",
-        "event_handler",
-    })
-    def __getattribute__(self, name: str, /):
-        if name in object.__getattribute__(self, "_essential_components"):
-            obj = object.__getattribute__(self, name)
-            if obj is None:
-                raise NotInitializedError(name)
-            return obj
-
-        return object.__getattribute__(self, name)
+        self.bot: Optional[Bot] = None
+        self.dispatcher: Optional[Dispatcher] = None
+        self.config: Optional[Config] = None
+        self.database: Optional[Database] = None
+        self.user_repository: Optional[UserRepository] = None
+        self.translator: Optional[Translator] = None
+        self.moderation_executor: Optional[ModerationExecutor] = None
+        self.message_sender: Optional[MessageSender] = None
 
     def _init_config(self):
         config_filepath = paths.CONFIG_FILEPATH
@@ -68,30 +56,30 @@ class Application:
         self.config = Config.load(config_filepath)
 
     async def _init_database(self):
-        config = self.config
+        config = req("config", self.config)
 
-        self.database = Database(config.get_database_url()) # type: ignore
+        self.database = Database(config.get_database_url())
         await self.database.init()
 
         self.user_repository = UserRepository(
             self.database,
-            config.database.repositories.user.cache_size, # type: ignore
-            config.database.repositories.user.cache_ttl # type: ignore
+            config.database.repositories.user.cache_size,
+            config.database.repositories.user.cache_ttl
         )
 
     def _init_logging(self):
-        config = self.config
+        config = req("config", self.config)
 
         logging.basicConfig(
-            format=config.logging.fmt, # type: ignore
-            datefmt=config.logging.date_fmt, # type: ignore
-            level=config.logging.level, # type: ignore
+            format=config.logging.fmt,
+            datefmt=config.logging.date_fmt,
+            level=config.logging.level,
         )
 
     def _init_bot(self):
-        config = self.config
+        config = req("config", self.config)
 
-        bot_token = config.bot.token # type: ignore
+        bot_token = config.bot.token
         if not bot_token:
             raise ValueError("bot.token is required and cannot be empty")
 
@@ -106,67 +94,65 @@ class Application:
         await self.translator.init(self.bot)
 
     def _postinit_bot(self):
-        dispatcher, config, translator, user_repository = (
-            self.dispatcher,
-            self.config,
-            self.translator,
-            self.user_repository
-        )
+        dispatcher = req("dispatcher", self.dispatcher)
+        config = req("config", self.config)
+        translator = req("translator", self.translator)
+        user_repository = req("user_repository", self.user_repository)
 
-        dispatcher.update.middleware( # type: ignore
+        dispatcher.update.middleware(
             BlockedMiddleware(
-                user_repository=user_repository, # type: ignore
-                translator=translator, # type: ignore
+                user_repository=user_repository,
+                translator=translator,
             )
         )
 
-        if config.behavior.subscription_requirement.enabled: # type: ignore
-            dispatcher.update.middleware( # type: ignore
+        if config.behavior.subscription_requirement.enabled:
+            dispatcher.update.middleware(
                 SubscriptionMiddleware(
-                    channel_ids=config.forwarding.publication_channel_ids, # type: ignore
-                    translator=translator # type: ignore
+                    channel_ids=config.forwarding.publication_channel_ids,
+                    translator=translator
                 )
             )
 
-        dispatcher.update.middleware( # type: ignore
+        dispatcher.update.middleware(
             RegisteredMiddleware(
-                user_repository=user_repository, # type: ignore
-                translator=translator, # type: ignore
+                user_repository=user_repository,
+                translator=translator,
             )
         )
 
-        if config.behavior.throttling.enabled: # type: ignore
-            dispatcher.update.middleware( # type: ignore
+        if config.behavior.throttling.enabled:
+            dispatcher.update.middleware(
                 ThrottlingMiddleware(
-                    delay=config.behavior.throttling.delay, # type: ignore
-                    translator=translator, # type: ignore
-                    allowed_chat_ids=config.forwarding.moderation_chat_ids # type: ignore
+                    delay=config.behavior.throttling.delay,
+                    translator=translator,
+                    allowed_chat_ids=config.forwarding.moderation_chat_ids
                 )
             )
 
     def _init_message_sender(self):
-        bot, config, translator = (
-            self.bot,
-            self.config,
-            self.translator
-        )
+        bot = req("bot", self.bot)
+        config = req("config", self.config)
+        translator = req("translator", self.translator)
 
-        self.message_sender = MessageSender(bot=bot, config=config, translator=translator) # type: ignore
+        self.message_sender = MessageSender(
+            bot=bot,
+            config=config,
+            translator=translator
+        )
 
     def _init_moderation(self):
-        bot, config = (
-            self.bot,
-            self.config
-        )
+        bot = req("bot", self.bot)
+        config = req("config", self.config)
 
-        if config.moderation.enabled: # type: ignore
+        if config.moderation.enabled:
             self.rule_manager = RuleManager(rules_dir=paths.RULES_DIR)
             self.rule_manager.reload()
 
-            self.planner = ModerationPlanner(config=config, rule_manager=self.rule_manager) # type: ignore
+            self.planner = ModerationPlanner(config=config, rule_manager=self.rule_manager)
             self.executor = ModerationExecutor(
-                config=config, # type: ignore
-                bot=bot, # type: ignore
+                config=config,
+                bot=bot,
                 planner=self.planner
             )
 
@@ -183,29 +169,27 @@ class Application:
     async def run(self):
         await self.init()
 
-        bot, dispatcher, config, database, user_repository, translator, message_sender = (
-            self.bot,
-            self.dispatcher,
-            self.config,
-            self.database,
-            self.user_repository,
-            self.translator,
-            self.message_sender
-        )
+        bot = req("bot", self.bot)
+        dispatcher = req("dispatcher", self.dispatcher)
+        config = req("config", self.config)
+        database = req("database", self.database)
+        user_repository = req("user_repository", self.user_repository)
+        translator = req("translator", self.translator)
+        message_sender = req("message_sender", self.message_sender)
 
-        dispatcher.include_router( # type: ignore
+        dispatcher.include_router(
             build(
-                config=config, # type: ignore
-                database=database, # type: ignore
-                user_repository=user_repository, # type: ignore
-                translator=translator, # type: ignore
-                message_sender=message_sender, # type: ignore
-                executor=self.executor,
+                config=config,
+                database=database,
+                user_repository=user_repository,
+                translator=translator,
+                message_sender=message_sender,
+                executor=self.moderation_executor,
             )
         )
 
         try:
-            await dispatcher.start_polling(bot) # type: ignore
+            await dispatcher.start_polling(bot)
         finally:
-            await bot.session.close() # type: ignore
-            await database.close() # type: ignore
+            await bot.session.close()
+            await database.close()
