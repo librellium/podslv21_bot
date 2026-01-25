@@ -1,5 +1,5 @@
 from .builder import build
-from .events import EventHandler
+from .messaging import MessageSender
 from .middleware import (
     BlockedMiddleware,
     PrePostMiddleware,
@@ -10,8 +10,8 @@ from .middleware import (
 
 __all__ = [
     "build",
-    "EventHandler",
     "BlockedMiddleware",
+    "MessageSender",
     "PrePostMiddleware",
     "RegisteredMiddleware",
     "SubscriptionMiddleware",

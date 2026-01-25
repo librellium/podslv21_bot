@@ -6,7 +6,7 @@ from typing import AsyncGenerator
 from aiogram import Bot
 from aiogram.types import Message
 
-from anonflow.bot.events.models import (
+from anonflow.bot.messaging.events import (
     Events,
     ModerationDecisionEvent,
     ModerationStartedEvent

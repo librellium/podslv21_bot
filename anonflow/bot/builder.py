@@ -7,7 +7,7 @@ from anonflow.database import Database, UserRepository
 from anonflow.moderation import ModerationExecutor
 from anonflow.translator import Translator
 
-from .events import EventHandler
+from .messaging import MessageSender
 from .routers import InfoRouter, MediaRouter, StartRouter, TextRouter
 
 
@@ -16,7 +16,7 @@ def build(
     database: Database,
     user_repository: UserRepository,
     translator: Translator,
-    event_handler: EventHandler,
+    message_sender: MessageSender,
     executor: Optional[ModerationExecutor] = None,
 ) -> Router:
     main_router = Router()
@@ -24,8 +24,8 @@ def build(
     routers = [
         StartRouter(translator=translator, user_repository=user_repository),
         InfoRouter(database=database, translator=translator),
-        TextRouter(config=config, database=database, translator=translator, event_handler=event_handler, moderation_executor=executor),
-        MediaRouter(config=config, database=database, translator=translator, event_handler=event_handler, moderation_executor=executor),
+        TextRouter(config=config, database=database, translator=translator, message_sender=message_sender, moderation_executor=executor),
+        MediaRouter(config=config, database=database, translator=translator, message_sender=message_sender, moderation_executor=executor),
     ]
 
     for router in routers:

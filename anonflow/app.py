@@ -4,7 +4,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.bot import DefaultBotProperties
 
 from anonflow.bot import (
-    EventHandler,
+    MessageSender,
     BlockedMiddleware,
     PrePostMiddleware,
     RegisteredMiddleware,
@@ -148,14 +148,14 @@ class Application:
             PrePostMiddleware()
         )
 
-    def _init_event_handler(self):
+    def _init_message_sender(self):
         bot, config, translator = (
             self.bot,
             self.config,
             self.translator
         )
 
-        self.event_handler = EventHandler(bot=bot, config=config, translator=translator) # type: ignore
+        self.message_sender = MessageSender(bot=bot, config=config, translator=translator) # type: ignore
 
     def _init_moderation(self):
         bot, config = (
@@ -181,20 +181,20 @@ class Application:
         self._init_bot()
         await self._init_translator()
         self._postinit_bot()
-        self._init_event_handler()
+        self._init_message_sender()
         self._init_moderation()
 
     async def run(self):
         await self.init()
 
-        bot, dispatcher, config, database, user_repository, translator, event_handler = (
+        bot, dispatcher, config, database, user_repository, translator, message_sender = (
             self.bot,
             self.dispatcher,
             self.config,
             self.database,
             self.user_repository,
             self.translator,
-            self.event_handler
+            self.message_sender
         )
 
         dispatcher.include_router( # type: ignore
@@ -203,7 +203,7 @@ class Application:
                 database=database, # type: ignore
                 user_repository=user_repository, # type: ignore
                 translator=translator, # type: ignore
-                event_handler=event_handler, # type: ignore
+                message_sender=message_sender, # type: ignore
                 executor=self.executor,
             )
         )
