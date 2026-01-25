@@ -8,7 +8,7 @@ from anonflow.moderation import ModerationExecutor
 from anonflow.translator import Translator
 
 from .messaging import MessageSender
-from .routers import InfoRouter, MediaRouter, StartRouter, TextRouter
+from .routers import InfoRouter, MediaRouter, StartRouter, SupportRouter, TextRouter
 
 
 def build(
@@ -24,6 +24,7 @@ def build(
     routers = [
         StartRouter(translator=translator, user_repository=user_repository),
         InfoRouter(database=database, translator=translator),
+        SupportRouter(translator=translator),
         TextRouter(config=config, database=database, translator=translator, message_sender=message_sender, moderation_executor=executor),
         MediaRouter(config=config, database=database, translator=translator, message_sender=message_sender, moderation_executor=executor),
     ]

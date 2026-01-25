@@ -4,10 +4,12 @@ from typing import Dict, List, Optional, Tuple
 
 from aiogram import F, Router
 from aiogram.enums import ChatType
+from aiogram.fsm.context import FSMContext
 from aiogram.types import InputMediaPhoto, InputMediaVideo, Message
 
 from anonflow.bot.messaging.events import BotMessagePreparedEvent, ModerationDecisionEvent
 from anonflow.bot.messaging.message_sender import MessageSender
+from anonflow.bot.states import SupportStates
 from anonflow.database import Database
 from anonflow.config import Config
 from anonflow.moderation import ModerationExecutor
@@ -82,9 +84,11 @@ class MediaRouter(Router):
                 )
 
         @self.message(F.photo | F.video)
-        async def on_photo(message: Message, is_post: bool):
+        async def on_photo(message: Message, state: FSMContext):
             if message.chat.type != ChatType.PRIVATE:
                 return
+
+            in_support = state and (await state.get_state()) == SupportStates.in_support
 
             media_group_id = message.media_group_id
 
@@ -107,7 +111,7 @@ class MediaRouter(Router):
 
             if media_group_id:
                 async with self.media_groups_lock:
-                    self.media_groups.setdefault(media_group_id, []).append((message, is_post))
+                    self.media_groups.setdefault(media_group_id, []).append((message, not in_support))
 
                     task = self.media_groups_tasks.get(media_group_id)
                     if task:
@@ -118,4 +122,4 @@ class MediaRouter(Router):
                     )
                 return
 
-            await process_messages([message], is_post)
+            await process_messages([message], not in_support)

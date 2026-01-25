@@ -2,10 +2,12 @@ from typing import Optional
 
 from aiogram import F, Router
 from aiogram.enums import ChatType
+from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 from anonflow.bot.messaging.events import BotMessagePreparedEvent, ModerationDecisionEvent
 from anonflow.bot.messaging.message_sender import MessageSender
+from anonflow.bot.states import SupportStates
 from anonflow.database import Database
 from anonflow.config import Config
 from anonflow.moderation import ModerationExecutor
@@ -33,7 +35,7 @@ class TextRouter(Router):
 
     def setup(self):
         @self.message(F.text)
-        async def on_text(message: Message, is_post: bool):
+        async def on_text(message: Message, state: FSMContext):
             moderation = self.config.moderation.enabled
             moderation_approved = not moderation
 
@@ -41,16 +43,20 @@ class TextRouter(Router):
                 message.chat.type == ChatType.PRIVATE
                 and "text" in self.config.forwarding.types
             ):
-                msg = utils.strip_post_command(message)
-                if moderation and is_post:
-                    async for event in self.executor.process_message(msg): # type: ignore
+                in_support = state and (await state.get_state()) == SupportStates.in_support
+
+                if moderation and not in_support:
+                    async for event in self.executor.process_message(message): # type: ignore
                         if isinstance(event, ModerationDecisionEvent):
                             moderation_approved = event.approved
-                        await self.message_sender.dispatch(event, msg)
+                        await self.message_sender.dispatch(event, message)
 
                 _ = self.translator.get()
-                content = _("messages.channel.text", message=msg) if is_post else (msg.text or "")
                 await self.message_sender.dispatch(
-                    BotMessagePreparedEvent(content, is_post, moderation_approved),
-                    msg
+                    BotMessagePreparedEvent(
+                        _("messages.channel.text", message=message),
+                        not in_support,
+                        moderation_approved
+                    ),
+                    message
                 )

@@ -3,6 +3,7 @@ import time
 from typing import Dict, Iterable, Optional
 
 from aiogram import BaseMiddleware
+from aiogram.fsm.context import FSMContext
 from aiogram.types import ChatIdUnion, Message
 
 from anonflow.translator import Translator
@@ -29,8 +30,11 @@ class ThrottlingMiddleware(BaseMiddleware):
         message = extract_message(event)
 
         if isinstance(message, Message) and message.chat.id not in self.allowed_chat_ids:
-            text = message.text or message.caption
-            if text and text.startswith("/post"):
+
+            state: Optional[FSMContext] = data.get("state")
+            text = message.text or message.caption or ""
+
+            if not state or not await state.get_state() and not text.startswith("/"):
                 async with self.lock:
                     user_lock = self.user_locks.setdefault(message.chat.id, asyncio.Lock())
 

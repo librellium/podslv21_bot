@@ -2,11 +2,11 @@ import logging
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.bot import DefaultBotProperties
+from aiogram.fsm.storage.memory import MemoryStorage
 
 from anonflow.bot import (
     MessageSender,
     BlockedMiddleware,
-    PrePostMiddleware,
     RegisteredMiddleware,
     SubscriptionMiddleware,
     ThrottlingMiddleware,
@@ -99,7 +99,7 @@ class Application:
             token=bot_token.get_secret_value(),
             default=DefaultBotProperties(parse_mode="HTML")
         )
-        self.dispatcher = Dispatcher()
+        self.dispatcher = Dispatcher(storage=MemoryStorage())
 
     async def _init_translator(self):
         self.translator = Translator()
@@ -143,10 +143,6 @@ class Application:
                     allowed_chat_ids=config.forwarding.moderation_chat_ids # type: ignore
                 )
             )
-
-        dispatcher.update.middleware( # type: ignore
-            PrePostMiddleware()
-        )
 
     def _init_message_sender(self):
         bot, config, translator = (

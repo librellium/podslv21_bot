@@ -1,4 +1,5 @@
 from aiogram import BaseMiddleware
+from aiogram.enums import ChatType
 from aiogram.types import Message
 
 from anonflow.database import UserRepository
@@ -18,7 +19,7 @@ class RegisteredMiddleware(BaseMiddleware):
         _ = self.translator.get()
 
         message = extract_message(event)
-        if isinstance(message, Message):
+        if isinstance(message, Message) and message.chat.type == ChatType.PRIVATE:
             text = message.text or message.caption or ""
 
             is_user_exists = await self.user_repository.has(message.chat.id)
