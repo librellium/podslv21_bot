@@ -13,8 +13,6 @@ from anonflow.config import Config
 from anonflow.moderation import ModerationExecutor
 from anonflow.translator import Translator
 
-from . import utils
-
 
 class TextRouter(Router):
     def __init__(

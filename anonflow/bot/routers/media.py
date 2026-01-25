@@ -15,8 +15,6 @@ from anonflow.config import Config
 from anonflow.moderation import ModerationExecutor
 from anonflow.translator import Translator
 
-from . import utils
-
 
 class MediaRouter(Router):
     def __init__(
@@ -65,18 +63,17 @@ class MediaRouter(Router):
 
                 content = []
                 for index, message in enumerate(messages):
-                    msg = utils.strip_post_command(message)
                     if moderation and is_post:
-                        async for event in self.executor.process_message(msg): # type: ignore
+                        async for event in self.executor.process_message(message): # type: ignore
                             if isinstance(event, ModerationDecisionEvent):
                                 moderation_approved = event.approved
-                            await self.message_sender.dispatch(event, msg)
+                            await self.message_sender.dispatch(event, message)
 
                     if index == 0:
-                        caption = _("messages.channel.media", message=msg) if is_post else (msg.caption or "")
-                        content.append(get_media(msg, caption))
+                        caption = _("messages.channel.media", message=message)
+                        content.append(get_media(message, caption))
                     else:
-                        content.append(get_media(msg))
+                        content.append(get_media(message))
 
                 await self.message_sender.dispatch(
                     BotMessagePreparedEvent(content, is_post, moderation_approved),
