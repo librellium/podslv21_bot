@@ -2,15 +2,13 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
-from anonflow.database import Database
 from anonflow.translator import Translator
 
 
 class InfoRouter(Router):
-    def __init__(self, database: Database, translator: Translator):
+    def __init__(self, translator: Translator):
         super().__init__()
 
-        self.database = database
         self.translator = translator
 
     def setup(self):
