@@ -1,6 +1,8 @@
+from string import Template
 from pathlib import Path
 
 import yaml
+from dotenv import dotenv_values
 from sqlalchemy.engine import URL
 from pydantic import BaseModel, SecretStr
 
@@ -54,34 +56,36 @@ class Config(BaseModel):
         )
 
     @classmethod
-    def _serialize(cls, obj):
-        if isinstance(obj, SecretStr):
-            return obj.get_secret_value()
-        elif isinstance(obj, dict):
-            return {key: cls._serialize(value) for key, value in obj.items()}
-        elif isinstance(obj, list):
-            return [cls._serialize(value) for value in obj]
-
-        return obj
-
-    @classmethod
     def load(cls, filepath: Path):
         filepath = Path(filepath)
         filepath.parent.mkdir(parents=True, exist_ok=True)
 
         if filepath.exists():
             with filepath.open(encoding="utf-8") as f:
-                data = yaml.safe_load(f) or {}
+                template = Template(f.read())
+                rendered = template.safe_substitute(dotenv_values())
+                data = yaml.safe_load(rendered) or {}
             return cls(**data) # type: ignore
 
         return cls()
+
+    @classmethod
+    def _prepare_for_save(cls, obj):
+        if isinstance(obj, SecretStr):
+            return obj.get_secret_value()
+        elif isinstance(obj, dict):
+            return {key: cls._prepare_for_save(value) for key, value in obj.items()}
+        elif isinstance(obj, list):
+            return [cls._prepare_for_save(value) for value in obj]
+
+        return obj
 
     def save(self, filepath: Path):
         filepath.parent.mkdir(parents=True, exist_ok=True)
 
         with filepath.open("w", encoding="utf-8") as config_file:
             yaml.dump(
-                self._serialize(self.model_dump()),
+                self._prepare_for_save(self.model_dump()),
                 config_file,
                 width=float("inf"),
                 sort_keys=False,
