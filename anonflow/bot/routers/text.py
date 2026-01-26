@@ -29,7 +29,7 @@ class TextRouter(Router):
         self.database = database
         self.translator = translator
         self.message_sender = message_sender
-        self.executor = moderation_executor
+        self.moderation_executor = moderation_executor
 
     def setup(self):
         @self.message(F.text)
@@ -43,8 +43,9 @@ class TextRouter(Router):
             ):
                 in_support = state and (await state.get_state()) == SupportStates.in_support
 
-                if moderation and not in_support:
-                    async for event in self.executor.process_message(message): # type: ignore
+                executor = self.moderation_executor
+                if moderation and executor and not in_support:
+                    async for event in executor.process_message(message):
                         if isinstance(event, ModerationDecisionEvent):
                             moderation_approved = event.approved
                         await self.message_sender.dispatch(event, message)

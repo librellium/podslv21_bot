@@ -31,7 +31,7 @@ class MediaRouter(Router):
         self.database = database
         self.translator = translator
         self.message_sender = message_sender
-        self.executor = moderation_executor
+        self.moderation_executor = moderation_executor
 
         self.media_groups: Dict[str, List[Tuple[Message, bool]]] = {}
         self.media_groups_tasks: Dict[str, asyncio.Task] = {}
@@ -62,9 +62,10 @@ class MediaRouter(Router):
                 _ = self.translator.get()
 
                 content = []
+                executor = self.moderation_executor
                 for index, message in enumerate(messages):
-                    if moderation and is_post:
-                        async for event in self.executor.process_message(message): # type: ignore
+                    if moderation and executor and is_post:
+                        async for event in executor.process_message(message):
                             if isinstance(event, ModerationDecisionEvent):
                                 moderation_approved = event.approved
                             await self.message_sender.dispatch(event, message)

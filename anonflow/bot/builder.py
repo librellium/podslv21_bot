@@ -17,16 +17,31 @@ def build(
     user_repository: UserRepository,
     translator: Translator,
     message_sender: MessageSender,
-    executor: Optional[ModerationExecutor] = None,
+    moderation_executor: Optional[ModerationExecutor] = None,
 ) -> Router:
     main_router = Router()
 
     routers = [
-        StartRouter(translator=translator, user_repository=user_repository),
-        InfoRouter(database=database, translator=translator),
+        StartRouter(
+            translator=translator,
+            user_repository=user_repository
+        ),
+        InfoRouter(translator=translator),
         SupportRouter(translator=translator),
-        TextRouter(config=config, database=database, translator=translator, message_sender=message_sender, moderation_executor=executor),
-        MediaRouter(config=config, database=database, translator=translator, message_sender=message_sender, moderation_executor=executor),
+        TextRouter(
+            config=config,
+            database=database,
+            translator=translator,
+            message_sender=message_sender,
+            moderation_executor=moderation_executor
+        ),
+        MediaRouter(
+            config=config,
+            database=database,
+            translator=translator,
+            message_sender=message_sender,
+            moderation_executor=moderation_executor
+        ),
     ]
 
     for router in routers:

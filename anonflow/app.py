@@ -5,6 +5,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.fsm.storage.memory import MemoryStorage
 
+from anonflow import __version_str__
 from anonflow.bot import (
     MessageSender,
     BlockedMiddleware,
@@ -38,6 +39,8 @@ def req(name: str, value: T | None) -> T:
 
 class Application:
     def __init__(self):
+        self._logger = logging.getLogger(__name__)
+
         self.bot: Optional[Bot] = None
         self.dispatcher: Optional[Dispatcher] = None
         self.config: Optional[Config] = None
@@ -52,6 +55,7 @@ class Application:
 
         if not config_filepath.exists():
             Config().save(config_filepath)
+            raise RuntimeError("Config file was just created. Please fill it out and restart the application.")
 
         self.config = Config.load(config_filepath)
 
@@ -150,7 +154,7 @@ class Application:
             self.rule_manager.reload()
 
             self.planner = ModerationPlanner(config=config, rule_manager=self.rule_manager)
-            self.executor = ModerationExecutor(
+            self.moderation_executor = ModerationExecutor(
                 config=config,
                 bot=bot,
                 planner=self.planner
@@ -169,6 +173,8 @@ class Application:
     async def run(self):
         await self.init()
 
+        self._logger.info(f"Anonflow v{__version_str__} has been successfully initialized.")
+
         bot = req("bot", self.bot)
         dispatcher = req("dispatcher", self.dispatcher)
         config = req("config", self.config)
@@ -184,12 +190,13 @@ class Application:
                 user_repository=user_repository,
                 translator=translator,
                 message_sender=message_sender,
-                executor=self.moderation_executor,
+                moderation_executor=self.moderation_executor,
             )
         )
 
         try:
             await dispatcher.start_polling(bot)
         finally:
+            self._logger.info("Shutting down Anonflow...")
             await bot.session.close()
             await database.close()
