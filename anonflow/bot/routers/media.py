@@ -4,12 +4,10 @@ from typing import Dict, List, Optional, Tuple
 
 from aiogram import F, Router
 from aiogram.enums import ChatType
-from aiogram.fsm.context import FSMContext
 from aiogram.types import InputMediaPhoto, InputMediaVideo, Message
 
 from anonflow.bot.messaging.events import BotMessagePreparedEvent, ModerationDecisionEvent
 from anonflow.bot.messaging.message_sender import MessageSender
-from anonflow.bot.states import SupportStates
 from anonflow.database import Database
 from anonflow.config import Config
 from anonflow.moderation import ModerationExecutor
@@ -33,7 +31,7 @@ class MediaRouter(Router):
         self.message_sender = message_sender
         self.moderation_executor = moderation_executor
 
-        self.media_groups: Dict[str, List[Tuple[Message, bool]]] = {}
+        self.media_groups: Dict[str, List[Message]] = {}
         self.media_groups_tasks: Dict[str, asyncio.Task] = {}
         self.media_groups_lock = asyncio.Lock()
 
@@ -52,7 +50,7 @@ class MediaRouter(Router):
             elif message.video and "video" in self.config.forwarding.types:
                 return InputMediaVideo(media=message.video.file_id, caption=caption)
 
-        async def process_messages(messages: List[Message], is_post: bool):
+        async def process_messages(messages: List[Message]):
             if not messages:
                 return
 
@@ -64,7 +62,7 @@ class MediaRouter(Router):
                 content = []
                 executor = self.moderation_executor
                 for index, message in enumerate(messages):
-                    if moderation and executor and is_post:
+                    if moderation and executor:
                         async for event in executor.process_message(message):
                             if isinstance(event, ModerationDecisionEvent):
                                 moderation_approved = event.approved
@@ -77,16 +75,14 @@ class MediaRouter(Router):
                         content.append(get_media(message))
 
                 await self.message_sender.dispatch(
-                    BotMessagePreparedEvent(content, is_post, moderation_approved),
+                    BotMessagePreparedEvent(content, moderation_approved),
                     messages[0]
                 )
 
         @self.message(F.photo | F.video)
-        async def on_photo(message: Message, state: FSMContext):
+        async def on_photo(message: Message):
             if message.chat.type != ChatType.PRIVATE:
                 return
-
-            in_support = state and (await state.get_state()) == SupportStates.in_support
 
             media_group_id = message.media_group_id
 
@@ -94,22 +90,16 @@ class MediaRouter(Router):
                 try:
                     await asyncio.sleep(2)
                     async with self.media_groups_lock:
-                        items = self.media_groups.pop(media_group_id, []) # type: ignore
+                        messages = self.media_groups.pop(media_group_id, []) # type: ignore
                         self.media_groups_tasks.pop(media_group_id, None) # type: ignore
 
-                        messages = []
-                        final_is_post = False
-                        for item in items:
-                            messages.append(item[0])
-                            final_is_post = final_is_post or item[1]
-
-                    await process_messages(messages, final_is_post)
+                    await process_messages(messages)
                 except CancelledError:
                     pass
 
             if media_group_id:
                 async with self.media_groups_lock:
-                    self.media_groups.setdefault(media_group_id, []).append((message, not in_support))
+                    self.media_groups.setdefault(media_group_id, []).append(message)
 
                     task = self.media_groups_tasks.get(media_group_id)
                     if task:
@@ -120,4 +110,4 @@ class MediaRouter(Router):
                     )
                 return
 
-            await process_messages([message], not in_support)
+            await process_messages([message])

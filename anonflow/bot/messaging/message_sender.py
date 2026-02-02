@@ -34,7 +34,7 @@ class MessageSender:
         publication_channel_ids = self.config.forwarding.publication_channel_ids or ()
 
         chat_ids = moderation_chat_ids
-        if event.moderation_approved and event.is_post:
+        if event.moderation_approved:
             chat_ids += publication_channel_ids
 
         for chat_id in chat_ids:
@@ -59,7 +59,7 @@ class MessageSender:
                             caption=input_media.caption
                         )
 
-        if event.moderation_approved or not event.is_post:
+        if event.moderation_approved:
             await message.answer(_("messages.user.send_success", message=message))
 
     async def _handle_moderation_started(self, event: ModerationStartedEvent, message: Message, _):

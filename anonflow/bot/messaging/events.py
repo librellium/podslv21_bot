@@ -7,7 +7,6 @@ from aiogram.types import MediaUnion
 @dataclass
 class BotMessagePreparedEvent:
     content: Union[str, List[MediaUnion]]
-    is_post: bool
     moderation_approved: bool
 
 @dataclass
