@@ -9,7 +9,7 @@ class Database:
     def __init__(self, url: URL, echo: bool = False):
         self.url = url
 
-        self._engine = create_async_engine(self.url, echo=echo, future=True) #type: ignore
+        self._engine = create_async_engine(self.url, echo=echo)
         self._session_maker = sessionmaker(
             self._engine, expire_on_commit=False, class_=AsyncSession # type: ignore
         )
