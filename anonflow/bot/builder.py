@@ -3,7 +3,6 @@ from typing import Optional
 from aiogram import Router
 
 from anonflow.config import Config
-from anonflow.database import Database
 from anonflow.moderation import ModerationExecutor
 from anonflow.services import MessageRouter, ModeratorService, UserService
 from anonflow.translator import Translator
