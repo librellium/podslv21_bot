@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Literal, Optional, Tuple, TypeAlias, Union
 
-from pydantic import BaseModel, SecretStr
+from pydantic import BaseModel, Field, SecretStr
 
 ForwardingType: TypeAlias = Literal["text", "photo", "video"]
 ModerationType: TypeAlias = Literal["omni", "gpt"]
@@ -22,7 +22,7 @@ class BehaviorThrottling(BaseModel):
 
 class BehaviorSubscriptionRequirement(BaseModel):
     enabled: bool = True
-    channel_ids: Optional[Tuple[int]] = None
+    channel_ids: Tuple[int] = Field(default_factory=tuple)
     model_config = {"frozen": True}
 
 
@@ -61,8 +61,8 @@ class Database(BaseModel):
 
 
 class Forwarding(BaseModel):
-    moderation_chat_ids: Optional[Tuple[int]] = None
-    publication_channel_ids: Optional[Tuple[int]] = None
+    moderation_chat_ids: Tuple[int] = Field(default_factory=tuple)
+    publication_channel_ids: Tuple[int] = Field(default_factory=tuple)
     types: Tuple[ForwardingType, ...] = ("text", "photo", "video")
     model_config = {"frozen": True}
 

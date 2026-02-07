@@ -3,18 +3,17 @@ import base64
 import logging
 import textwrap
 from io import BytesIO
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Literal
 
 from aiogram import Bot
 from aiogram.types import Message
 
-from anonflow.bot.messaging.events import (
+from anonflow.services.transport.events import (
     Events,
     ModerationDecisionEvent,
     ModerationStartedEvent
 )
 from anonflow.config import Config
-from openai.types.shared_params.response_format_json_schema import Literal
 
 from .planner import ModerationPlanner
 

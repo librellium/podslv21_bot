@@ -5,20 +5,18 @@ from aiogram import Router
 from anonflow.config import Config
 from anonflow.database import Database
 from anonflow.moderation import ModerationExecutor
-from anonflow.services import ModeratorService, UserService
+from anonflow.services import MessageRouter, ModeratorService, UserService
 from anonflow.translator import Translator
 
-from .messaging import MessageSender
 from .routers import InfoRouter, MediaRouter, StartRouter, TextRouter
 
 
 def build(
     config: Config,
-    database: Database,
     moderator_service: ModeratorService,
     user_service: UserService,
     translator: Translator,
-    message_sender: MessageSender,
+    message_router: MessageRouter,
     moderation_executor: Optional[ModerationExecutor] = None,
 ) -> Router:
     main_router = Router()
@@ -31,16 +29,12 @@ def build(
         InfoRouter(translator=translator),
         TextRouter(
             config=config,
-            database=database,
-            translator=translator,
-            message_sender=message_sender,
+            message_router=message_router,
             moderation_executor=moderation_executor
         ),
         MediaRouter(
             config=config,
-            database=database,
-            translator=translator,
-            message_sender=message_sender,
+            message_router=message_router,
             moderation_executor=moderation_executor
         ),
     ]

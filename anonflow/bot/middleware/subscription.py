@@ -1,4 +1,4 @@
-from typing import List
+from typing import Tuple
 
 from aiogram import BaseMiddleware
 from aiogram.enums import ChatMemberStatus, ChatType
@@ -8,7 +8,7 @@ from anonflow.translator import Translator
 
 
 class SubscriptionMiddleware(BaseMiddleware):
-    def __init__(self, channel_ids: List[ChatIdUnion], translator: Translator):
+    def __init__(self, channel_ids: Tuple[ChatIdUnion], translator: Translator):
         super().__init__()
 
         self.channel_ids = channel_ids

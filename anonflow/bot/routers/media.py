@@ -4,31 +4,26 @@ from typing import Dict, List, Optional
 
 from aiogram import F, Router
 from aiogram.enums import ChatType
-from aiogram.types import InputMediaPhoto, InputMediaVideo, Message
+from aiogram.types import Message
 
-from anonflow.bot.messaging.events import BotMessagePreparedEvent, ModerationDecisionEvent
-from anonflow.bot.messaging.message_sender import MessageSender
-from anonflow.database import Database
 from anonflow.config import Config
 from anonflow.moderation import ModerationExecutor
-from anonflow.translator import Translator
+from anonflow.services.transport import MessageRouter
+from anonflow.services.transport.content import ContentMediaGroup, ContentMediaItem, MediaType
+from anonflow.services.transport.events import PostPreparedEvent, ModerationDecisionEvent
 
 
 class MediaRouter(Router):
     def __init__(
         self,
         config: Config,
-        database: Database,
-        translator: Translator,
-        message_sender: MessageSender,
+        message_router: MessageRouter,
         moderation_executor: Optional[ModerationExecutor] = None,
     ):
         super().__init__()
 
         self.config = config
-        self.database = database
-        self.translator = translator
-        self.message_sender = message_sender
+        self.message_router = message_router
         self.moderation_executor = moderation_executor
 
         self.media_groups: Dict[str, List[Message]] = {}
@@ -44,11 +39,11 @@ class MediaRouter(Router):
                 for msg in msgs
             )
 
-        def get_media(message: Message, caption: Optional[str] = None):
+        def get_media(message: Message):
             if message.photo and "photo" in self.config.forwarding.types:
-                return InputMediaPhoto(media=message.photo[-1].file_id, caption=caption)
+                return {"type": MediaType.PHOTO, "file_id": message.photo[-1].file_id}
             elif message.video and "video" in self.config.forwarding.types:
-                return InputMediaVideo(media=message.video.file_id, caption=caption)
+                return {"type": MediaType.VIDEO, "file_id": message.video.file_id}
 
         async def process_messages(messages: List[Message]):
             if not messages:
@@ -57,25 +52,24 @@ class MediaRouter(Router):
             if can_send_media(messages):
                 moderation = self.config.moderation.enabled
                 moderation_approved = not moderation
-                _ = self.translator.get()
 
-                content = []
+                content_group = ContentMediaGroup()
                 executor = self.moderation_executor
                 for index, message in enumerate(messages):
                     if moderation and executor:
                         async for event in executor.process_message(message):
                             if isinstance(event, ModerationDecisionEvent):
                                 moderation_approved = event.approved
-                            await self.message_sender.dispatch(event, message)
+                            await self.message_router.dispatch(event, message)
 
-                    if index == 0:
-                        caption = _("messages.channel.media", message=message)
-                        content.append(get_media(message, caption))
-                    else:
-                        content.append(get_media(message))
+                    caption = message.caption if index == 0 else None
 
-                await self.message_sender.dispatch(
-                    BotMessagePreparedEvent(content, moderation_approved),
+                    media = get_media(message)
+                    if media:
+                        content_group.items.append(ContentMediaItem(**media, caption=caption))
+
+                await self.message_router.dispatch(
+                    PostPreparedEvent(content_group, moderation_approved),
                     messages[0]
                 )
 

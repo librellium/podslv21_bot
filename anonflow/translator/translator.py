@@ -23,14 +23,13 @@ class Translator:
         )
         return translator
 
-    def format(self, text: str, message: Optional[Message], **extra):
+    def format(self, s: str, message: Optional[Message], **extra):
         bot = self.bot
 
         msg_context = {}
         if isinstance(message, Message):
             user = message.from_user
             msg_context = {
-                "text": (message.text or message.caption) or "",
                 "first_name": getattr(user, "first_name", ""),
                 "last_name": getattr(user, "last_name", ""),
                 "username": getattr(user, "username", ""),
@@ -40,7 +39,7 @@ class Translator:
                 "bot_version": __version_str__,
             }
 
-        return text.format(
+        return s.format(
             **msg_context,
             **extra
         )
@@ -48,7 +47,7 @@ class Translator:
     def get(self, lang: Literal["ru"] = "ru"):
         translator = self._get_translator(lang)
 
-        def _(msgid: str, message: Optional[Message], **extra):
+        def _(msgid: str, message: Optional[Message] = None, **extra):
             return self.format(
                 translator.gettext(msgid),
                 message=message,

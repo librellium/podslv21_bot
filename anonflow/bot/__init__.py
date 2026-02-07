@@ -1,5 +1,4 @@
 from .builder import build
-from .messaging import MessageSender
 from .middleware import (
     BlockedMiddleware,
     RegisteredMiddleware,
@@ -10,7 +9,6 @@ from .middleware import (
 __all__ = [
     "build",
     "BlockedMiddleware",
-    "MessageSender",
     "RegisteredMiddleware",
     "SubscriptionMiddleware",
     "ThrottlingMiddleware"
