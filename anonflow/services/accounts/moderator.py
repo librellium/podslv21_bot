@@ -10,9 +10,8 @@ from anonflow.database import (
     BanRepository,
     ModeratorRepository
 )
+from .exceptions import ForbiddenError
 
-
-class ForbiddenError(PermissionError): ...
 
 class ModeratorService:
     def __init__(
