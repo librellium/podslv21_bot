@@ -4,29 +4,24 @@ from aiogram import F, Router
 from aiogram.enums import ChatType
 from aiogram.types import Message
 
-from anonflow.bot.messaging.events import BotMessagePreparedEvent, ModerationDecisionEvent
-from anonflow.bot.messaging.message_sender import MessageSender
-from anonflow.database import Database
 from anonflow.config import Config
 from anonflow.moderation import ModerationExecutor
-from anonflow.translator import Translator
+from anonflow.services.transport import MessageRouter
+from anonflow.services.transport.content import ContentTextItem
+from anonflow.services.transport.events import PostPreparedEvent, ModerationDecisionEvent
 
 
 class TextRouter(Router):
     def __init__(
         self,
         config: Config,
-        database: Database,
-        translator: Translator,
-        message_sender: MessageSender,
+        message_router: MessageRouter,
         moderation_executor: Optional[ModerationExecutor] = None,
     ):
         super().__init__()
 
         self.config = config
-        self.database = database
-        self.translator = translator
-        self.message_sender = message_sender
+        self.message_router = message_router
         self.moderation_executor = moderation_executor
 
     def setup(self):
@@ -44,12 +39,11 @@ class TextRouter(Router):
                     async for event in executor.process_message(message):
                         if isinstance(event, ModerationDecisionEvent):
                             moderation_approved = event.approved
-                        await self.message_sender.dispatch(event, message)
+                        await self.message_router.dispatch(event, message)
 
-                _ = self.translator.get()
-                await self.message_sender.dispatch(
-                    BotMessagePreparedEvent(
-                        _("messages.channel.text", message=message),
+                await self.message_router.dispatch(
+                    PostPreparedEvent(
+                        ContentTextItem(message.text or ""),
                         moderation_approved
                     ),
                     message
