@@ -7,7 +7,6 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 from anonflow import __version_str__
 from anonflow.bot import (
-    MessageSender,
     BlockedMiddleware,
     RegisteredMiddleware,
     SubscriptionMiddleware,
@@ -26,7 +25,12 @@ from anonflow.moderation import (
     ModerationPlanner,
     RuleManager
 )
-from anonflow.services import ModeratorService, UserService
+from anonflow.services import (
+    DeliveryService,
+    MessageRouter,
+    ModeratorService,
+    UserService
+)
 from anonflow.translator import Translator
 
 from . import paths
@@ -52,7 +56,7 @@ class Application:
         self.user_service: Optional[UserService] = None
         self.translator: Optional[Translator] = None
         self.moderation_executor: Optional[ModerationExecutor] = None
-        self.message_sender: Optional[MessageSender] = None
+        self.message_router: Optional[MessageRouter] = None
 
     def _init_config(self):
         config_filepath = paths.CONFIG_FILEPATH
@@ -143,14 +147,15 @@ class Application:
                 )
             )
 
-    def _init_message_sender(self):
+    def _init_transport(self):
         bot = req("bot", self.bot)
         config = req("config", self.config)
         translator = req("translator", self.translator)
 
-        self.message_sender = MessageSender(
-            bot=bot,
-            config=config,
+        self.message_router = MessageRouter(
+            moderation_chat_ids=config.forwarding.moderation_chat_ids,
+            publication_channel_ids=config.forwarding.publication_channel_ids,
+            delivery_service=DeliveryService(bot),
             translator=translator
         )
 
@@ -176,7 +181,7 @@ class Application:
         self._init_bot()
         await self._init_translator()
         self._postinit_bot()
-        self._init_message_sender()
+        self._init_transport()
         self._init_moderation()
 
     async def run(self):
@@ -191,16 +196,15 @@ class Application:
         moderator_service = req("moderator_service", self.moderator_service)
         user_service = req("user_service", self.user_service)
         translator = req("translator", self.translator)
-        message_sender = req("message_sender", self.message_sender)
+        message_router = req("message_router", self.message_router)
 
         dispatcher.include_router(
             build(
                 config=config,
-                database=database,
                 moderator_service=moderator_service,
                 user_service=user_service,
                 translator=translator,
-                message_sender=message_sender,
+                message_router=message_router,
                 moderation_executor=self.moderation_executor,
             )
         )
