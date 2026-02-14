@@ -66,8 +66,11 @@ msgstr ""
 #: anonflow/bot/routers/info.py:20
 msgid "messages.user.command_info"
 msgstr ""
-"Версия: {bot_version}\n"
-"Имя бота: {bot_username}"
+"<b>Anonflow</b> v{bot_version}\n"
+"<b>Имя бота</b>: {bot_username}\n"
+"<b>Ваш ID</b>: {chat_id} / {user_id}\n"
+"<b>Ваше имя</b>: {full_name}\n"
+"<b>Ваш username</b>: {username}"
 
 #: anonflow/bot/routers/media.py:73
 msgid "messages.channel.media"
@@ -79,7 +82,7 @@ msgstr ""
 #: anonflow/bot/routers/start.py:21
 msgid "messages.user.command_start"
 msgstr ""
-"Привет {username}!\n"
+"<b>Привет {username}!</b>\n"
 "Ты можешь отправить мне сообщение, и я передам его в прикрепленный канал, не "
 "раскрывая твою личность."
 
