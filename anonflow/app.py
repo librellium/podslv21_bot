@@ -1,5 +1,5 @@
 import logging
-from typing import TypeVar, Optional
+from typing import Optional, TypeVar
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.bot import DefaultBotProperties
@@ -8,15 +8,15 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from anonflow import __version_str__
 from anonflow.bot import (
     BlockedMiddleware,
-    RegisteredMiddleware,
+    UnregisteredMiddleware,
     SubscriptionMiddleware,
     ThrottlingMiddleware,
     build
 )
 from anonflow.config import Config
 from anonflow.database import (
-    Database,
     BanRepository,
+    Database,
     ModeratorRepository,
     UserRepository
 )
@@ -106,7 +106,7 @@ class Application:
         self.dispatcher = Dispatcher(storage=MemoryStorage())
 
     async def _init_translator(self):
-        self.translator = Translator()
+        self.translator = Translator(translations_dir=paths.TRANSLATIONS_DIR)
         await self.translator.init(self.bot)
 
     def _postinit_bot(self):
@@ -132,7 +132,7 @@ class Application:
             )
 
         dispatcher.update.middleware(
-            RegisteredMiddleware(
+            UnregisteredMiddleware(
                 user_service=user_service,
                 translator=translator,
             )
