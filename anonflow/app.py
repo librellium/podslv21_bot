@@ -6,13 +6,8 @@ from aiogram.client.bot import DefaultBotProperties
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from anonflow import __version_str__
-from anonflow.bot import (
-    BlockedMiddleware,
-    UnregisteredMiddleware,
-    SubscriptionMiddleware,
-    ThrottlingMiddleware,
-    build
-)
+from anonflow.bot.middleware import build as build_middleware
+from anonflow.bot.routers import build as build_routers
 from anonflow.config import Config
 from anonflow.database import (
     BanRepository,
@@ -67,6 +62,15 @@ class Application:
 
         self.config = Config.load(config_filepath)
 
+    def _init_logging(self):
+        config = req("config", self.config)
+
+        logging.basicConfig(
+            format=config.logging.fmt,
+            datefmt=config.logging.date_fmt,
+            level=config.logging.level,
+        )
+
     async def _init_database(self):
         config = req("config", self.config)
 
@@ -81,15 +85,6 @@ class Application:
             self.database,
             BanRepository(),
             ModeratorRepository()
-        )
-
-    def _init_logging(self):
-        config = req("config", self.config)
-
-        logging.basicConfig(
-            format=config.logging.fmt,
-            datefmt=config.logging.date_fmt,
-            level=config.logging.level,
         )
 
     def _init_bot(self):
@@ -109,55 +104,42 @@ class Application:
         self.translator = Translator(translations_dir=paths.TRANSLATIONS_DIR)
         await self.translator.init(self.bot)
 
-    def _postinit_bot(self):
-        dispatcher = req("dispatcher", self.dispatcher)
-        config = req("config", self.config)
-        translator = req("translator", self.translator)
-        moderator_service = req("moderator_service", self.moderator_service)
-        user_service = req("user_service", self.user_service)
-
-        dispatcher.update.middleware(
-            BlockedMiddleware(
-                moderator_service=moderator_service,
-                translator=translator,
-            )
-        )
-
-        if config.behavior.subscription_requirement.enabled:
-            dispatcher.update.middleware(
-                SubscriptionMiddleware(
-                    channel_ids=config.forwarding.publication_channel_ids,
-                    translator=translator
-                )
-            )
-
-        dispatcher.update.middleware(
-            UnregisteredMiddleware(
-                user_service=user_service,
-                translator=translator,
-            )
-        )
-
-        if config.behavior.throttling.enabled:
-            dispatcher.update.middleware(
-                ThrottlingMiddleware(
-                    delay=config.behavior.throttling.delay,
-                    translator=translator,
-                    allowed_chat_ids=config.forwarding.moderation_chat_ids
-                )
-            )
-
     def _init_transport(self):
         bot = req("bot", self.bot)
         config = req("config", self.config)
+        user_service = req("user_service", self.user_service)
+        moderator_service = req("moderator_service", self.moderator_service)
         translator = req("translator", self.translator)
 
         self.message_router = MessageRouter(
             moderation_chat_ids=config.forwarding.moderation_chat_ids,
             publication_channel_ids=config.forwarding.publication_channel_ids,
             delivery_service=DeliveryService(bot),
+            user_service=user_service,
+            moderator_service=moderator_service,
             translator=translator
         )
+
+    def _init_middleware(self):
+        dispatcher = req("dispatcher", self.dispatcher)
+        config = req("config", self.config)
+        message_router = req("message_router", self.message_router)
+        user_service = req("user_service", self.user_service)
+        moderator_service = req("moderator_service", self.moderator_service)
+
+        middlewares = build_middleware(
+            message_router=message_router,
+            user_service=user_service,
+            moderator_service=moderator_service,
+            subscription_requirement=config.behavior.subscription_requirement.enabled,
+            subscription_channel_ids=config.behavior.subscription_requirement.channel_ids,
+            throttling=config.behavior.throttling.enabled,
+            throttling_delay=config.behavior.throttling.delay,
+            throttling_allowed_chat_ids=config.forwarding.moderation_chat_ids
+        )
+
+        for middleware in middlewares:
+            dispatcher.update.middleware(middleware)
 
     def _init_moderation(self):
         bot = req("bot", self.bot)
@@ -176,12 +158,12 @@ class Application:
 
     async def init(self):
         self._init_config()
-        await self._init_database()
         self._init_logging()
+        await self._init_database()
         self._init_bot()
         await self._init_translator()
-        self._postinit_bot()
         self._init_transport()
+        self._init_middleware()
         self._init_moderation()
 
     async def run(self):
@@ -193,17 +175,11 @@ class Application:
         dispatcher = req("dispatcher", self.dispatcher)
         config = req("config", self.config)
         database = req("database", self.database)
-        moderator_service = req("moderator_service", self.moderator_service)
-        user_service = req("user_service", self.user_service)
-        translator = req("translator", self.translator)
         message_router = req("message_router", self.message_router)
 
         dispatcher.include_router(
-            build(
+            build_routers(
                 config=config,
-                moderator_service=moderator_service,
-                user_service=user_service,
-                translator=translator,
                 message_router=message_router,
                 moderation_executor=self.moderation_executor,
             )

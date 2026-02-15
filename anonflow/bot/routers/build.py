@@ -4,28 +4,23 @@ from aiogram import Router
 
 from anonflow.config import Config
 from anonflow.moderation import ModerationExecutor
-from anonflow.services import MessageRouter, ModeratorService, UserService
-from anonflow.translator import Translator
+from anonflow.services import MessageRouter
 
-from .routers import InfoRouter, MediaRouter, StartRouter, TextRouter
-
+from .info import InfoRouter
+from .media import MediaRouter
+from .start import StartRouter
+from .text import TextRouter
 
 def build(
     config: Config,
-    moderator_service: ModeratorService,
-    user_service: UserService,
-    translator: Translator,
     message_router: MessageRouter,
     moderation_executor: Optional[ModerationExecutor] = None,
 ) -> Router:
     main_router = Router()
 
     routers = [
-        StartRouter(
-            translator=translator,
-            user_service=user_service
-        ),
-        InfoRouter(translator=translator),
+        StartRouter(message_router=message_router),
+        InfoRouter(message_router=message_router),
         TextRouter(
             config=config,
             message_router=message_router,

@@ -4,26 +4,25 @@ from aiogram import BaseMiddleware
 from aiogram.enums import ChatMemberStatus, ChatType
 from aiogram.types import ChatIdUnion, Message
 
-from anonflow.translator import Translator
+from anonflow.services import MessageRouter
+from anonflow.services.transport.events import UserSubscriptionRequiredEvent
 
 
 class SubscriptionMiddleware(BaseMiddleware):
-    def __init__(self, channel_ids: Tuple[ChatIdUnion], translator: Translator):
+    def __init__(self, channel_ids: Tuple[ChatIdUnion], message_router: MessageRouter):
         super().__init__()
 
         self.channel_ids = channel_ids
-        self.translator = translator
+        self.message_router = message_router
 
     async def __call__(self, handler, event, data):
-        _ = self.translator.get()
-
         message = getattr(event, "message", None)
         if isinstance(message, Message) and message.chat.type == ChatType.PRIVATE:
             user_id = message.from_user.id # type: ignore
             for channel_id in self.channel_ids:
                 member = await message.bot.get_chat_member(channel_id, user_id) # type: ignore
                 if member.status in (ChatMemberStatus.KICKED, ChatMemberStatus.LEFT):
-                    await message.answer(_("messages.user.subscription_required", message=message))
+                    await self.message_router.dispatch(UserSubscriptionRequiredEvent(), message)
                     return
 
         return await handler(event, data)

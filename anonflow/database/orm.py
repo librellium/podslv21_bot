@@ -16,9 +16,9 @@ class Ban(Base):
     __tablename__ = "bans"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    chat_id = Column(
+    user_id = Column(
         Integer,
-        ForeignKey("users.chat_id", ondelete="CASCADE"),
+        ForeignKey("users.user_id", ondelete="CASCADE"),
         index=True,
         nullable=False
     )
@@ -29,17 +29,20 @@ class Ban(Base):
         server_default=func.now(),
         nullable=False
     )
-    unbanned_at = Column(DateTime(timezone=True), nullable=True)
+    unbanned_at = Column(
+        DateTime(timezone=True),
+        nullable=True
+    )
 
-    banned_by = Column(Integer, ForeignKey("moderators.chat_id"))
-    unbanned_by = Column(Integer, ForeignKey("moderators.chat_id"))
+    banned_by = Column(Integer, ForeignKey("moderators.user_id"))
+    unbanned_by = Column(Integer, ForeignKey("moderators.user_id"))
 
     user = relationship("User", back_populates="bans")
 
 class Moderator(Base):
     __tablename__ = "moderators"
 
-    chat_id = Column(Integer, ForeignKey("users.chat_id"), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.user_id"), primary_key=True)
 
     can_approve_posts = Column(Boolean, nullable=False, default=True)
     can_manage_bans = Column(Boolean, nullable=False, default=False)
@@ -50,7 +53,7 @@ class Moderator(Base):
 class User(Base):
     __tablename__ = "users"
 
-    chat_id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, primary_key=True)
     language = Column(String(2), default="ru")
 
     moderator = relationship(

@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from aiogram.types import ChatIdUnion
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -22,7 +21,7 @@ class ModeratorRepository(BaseRepository):
     async def add(
         self,
         session: AsyncSession,
-        chat_id: ChatIdUnion,
+        user_id: int,
         *,
         can_approve_posts: bool = True,
         can_manage_bans: bool = False,
@@ -31,24 +30,24 @@ class ModeratorRepository(BaseRepository):
         await super()._add(
             session,
             model_args={
-                "chat_id": chat_id,
+                "user_id": user_id,
                 "can_approve_posts": can_approve_posts,
                 "can_manage_bans": can_manage_bans,
                 "can_manage_moderators": can_manage_moderators
             }
         )
 
-    async def get(self, session: AsyncSession, chat_id: ChatIdUnion) -> Optional[Moderator]:
+    async def get(self, session: AsyncSession, user_id: int) -> Optional[Moderator]:
         return await super()._get(
             session,
-            filters={"chat_id": chat_id},
+            filters={"user_id": user_id},
             options=[
                 joinedload(Moderator.user)
             ]
         )
 
-    async def get_permissions(self, session: AsyncSession, chat_id: ChatIdUnion):
-        result = await self.get(session, chat_id)
+    async def get_permissions(self, session: AsyncSession, user_id: int):
+        result = await self.get(session, user_id)
         if result:
             return ModeratorPermissions(
                 result.can_approve_posts.value,
@@ -56,28 +55,29 @@ class ModeratorRepository(BaseRepository):
                 result.can_manage_moderators.value
             )
 
-    async def has(self, session: AsyncSession, chat_id: ChatIdUnion):
+    async def has(self, session: AsyncSession, user_id: int):
         return await super()._has(
             session,
-            filters={"chat_id": chat_id}
+            filters={"user_id": user_id}
         )
 
-    async def remove(self, session: AsyncSession, chat_id: ChatIdUnion):
+    async def remove(self, session: AsyncSession, user_id: int):
         await super()._remove(
             session,
-            filters={"chat_id": chat_id}
+            filters={"user_id": user_id}
         )
 
-    async def update(self, session: AsyncSession, chat_id: ChatIdUnion, **fields):
+    async def update(self, session: AsyncSession, user_id: int, **fields):
         await super()._update(
             session,
-            filters={"chat_id": chat_id}, fields=fields
+            filters={"user_id": user_id},
+            fields=fields
         )
 
     async def update_permissions(
         self,
         session: AsyncSession,
-        chat_id: ChatIdUnion,
+        user_id: int,
         *,
         can_approve_posts: Optional[bool] = None,
         can_manage_bans: Optional[bool] = None,
@@ -94,6 +94,6 @@ class ModeratorRepository(BaseRepository):
 
         await self.update(
             session,
-            chat_id,
+            user_id,
             **to_update
         )

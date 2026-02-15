@@ -1,4 +1,3 @@
-from aiogram.types import ChatIdUnion
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
@@ -10,36 +9,37 @@ from .base import BaseRepository
 class UserRepository(BaseRepository):
     model = User
 
-    async def add(self, session: AsyncSession, chat_id: ChatIdUnion):
+    async def add(self, session: AsyncSession, user_id: int):
         await super()._add(
             session,
-            model_args={"chat_id": chat_id}
+            model_args={"user_id": user_id}
         )
 
-    async def get(self, session: AsyncSession, chat_id: ChatIdUnion):
+    async def get(self, session: AsyncSession, user_id: int):
         return await super()._get(
             session,
-            filters={"chat_id": chat_id},
+            filters={"user_id": user_id},
             options=[
                 selectinload(User.bans),
                 joinedload(User.moderator)
             ]
         )
 
-    async def has(self, session: AsyncSession, chat_id: ChatIdUnion):
+    async def has(self, session: AsyncSession, user_id: int):
         return await super()._has(
             session,
-            filters={"chat_id": chat_id}
+            filters={"user_id": user_id}
         )
 
-    async def remove(self, session: AsyncSession, chat_id: ChatIdUnion):
+    async def remove(self, session: AsyncSession, user_id: int):
         await super()._remove(
             session,
-            filters={"chat_id": chat_id}
+            filters={"user_id": user_id}
         )
 
-    async def update(self, session: AsyncSession, chat_id: ChatIdUnion, **fields):
+    async def update(self, session: AsyncSession, user_id: int, **fields):
         await super()._update(
             session,
-            filters={"chat_id": chat_id}, fields=fields
+            filters={"user_id": user_id},
+            fields=fields
         )

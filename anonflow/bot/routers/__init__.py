@@ -1,6 +1,3 @@
-from .info import InfoRouter
-from .media import MediaRouter
-from .start import StartRouter
-from .text import TextRouter
+from .build import build
 
-__all__ = ["InfoRouter", "MediaRouter", "StartRouter", "TextRouter"]
+__all__ = ["build"]
