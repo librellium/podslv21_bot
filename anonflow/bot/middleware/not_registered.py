@@ -2,27 +2,25 @@ from aiogram import BaseMiddleware
 from aiogram.enums import ChatType
 from aiogram.types import Message
 
-from anonflow.services import UserService
-from anonflow.translator import Translator
+from anonflow.services import MessageRouter, UserService
+from anonflow.services.transport.events import UserNotRegisteredEvent
 
 
-class UnregisteredMiddleware(BaseMiddleware):
-    def __init__(self, user_service: UserService, translator: Translator):
+class NotRegisteredMiddleware(BaseMiddleware):
+    def __init__(self, message_router: MessageRouter, user_service: UserService):
         super().__init__()
 
+        self.message_router = message_router
         self.user_service = user_service
-        self.translator = translator
 
     async def __call__(self, handler, event, data):
-        _ = self.translator.get()
-
         message = getattr(event, "message", None)
         if isinstance(message, Message) and message.chat.type == ChatType.PRIVATE:
             text = message.text or message.caption or ""
 
             is_user_exists = await self.user_service.has(message.chat.id)
             if not is_user_exists and not text.startswith("/start"):
-                await message.answer(_("messages.user.start_required", message))
+                await self.message_router.dispatch(UserNotRegisteredEvent(), message)
                 return
 
         return await handler(event, data)
