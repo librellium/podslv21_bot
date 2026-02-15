@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 from aiogram import Bot
 from aiogram.client.bot import Default
@@ -6,22 +6,33 @@ from aiogram.types import (
     ChatIdUnion,
     InputMediaPhoto,
     InputMediaVideo,
-    MediaUnion,
     ReplyMarkupUnion
 )
+
+from .content import ContentMediaGroup, ContentMediaItem, MediaType
 
 
 class DeliveryService:
     def __init__(self, bot: Bot):
         self._bot = bot
 
+    @staticmethod
+    def _wrap_media(item: ContentMediaItem):
+        if item.type == MediaType.PHOTO:
+            return InputMediaPhoto(media=item.file_id, caption=item.caption)
+        elif item.type == MediaType.VIDEO:
+            return InputMediaVideo(media=item.file_id, caption=item.caption)
+        else:
+            raise ValueError("Media item type is invalid.")
+
     async def send_media(
         self,
         chat_id: ChatIdUnion,
-        media: MediaUnion,
+        media_item: ContentMediaItem,
         parse_mode: Optional[Union[str, Default]] = Default("parse_mode"),
         reply_markup: Optional[ReplyMarkupUnion] = None
     ):
+        media = self._wrap_media(media_item)
         if isinstance(media, InputMediaPhoto):
             await self._bot.send_photo(
                 chat_id,
@@ -42,11 +53,14 @@ class DeliveryService:
     async def send_media_group(
         self,
         chat_id: ChatIdUnion,
-        media: List[MediaUnion],
+        media_group: ContentMediaGroup,
     ):
         await self._bot.send_media_group(
             chat_id=chat_id,
-            media=media
+            media=[
+                self._wrap_media(item)
+                for item in media_group.items
+            ]
         )
 
     async def send_text(
