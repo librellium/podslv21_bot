@@ -5,11 +5,8 @@ from aiogram.types import ChatIdUnion
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from anonflow.database import (
-    Database,
-    BanRepository,
-    ModeratorRepository
-)
+from anonflow.database import BanRepository, Database, ModeratorRepository
+
 from .exceptions import ForbiddenError
 
 

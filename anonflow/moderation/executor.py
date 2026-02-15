@@ -8,12 +8,12 @@ from typing import AsyncGenerator, Literal
 from aiogram import Bot
 from aiogram.types import Message
 
+from anonflow.config import Config
 from anonflow.services.transport.events import (
     Events,
     ModerationDecisionEvent,
     ModerationStartedEvent
 )
-from anonflow.config import Config
 
 from .planner import ModerationPlanner
 

@@ -1,10 +1,6 @@
 from .database import Database
 from .orm import Ban, Moderator, User
-from .repositories import (
-    BanRepository,
-    ModeratorRepository,
-    UserRepository
-)
+from .repositories import BanRepository, ModeratorRepository, UserRepository
 
 __all__ = [
     "Database",

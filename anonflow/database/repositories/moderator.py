@@ -5,8 +5,9 @@ from aiogram.types import ChatIdUnion
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from .base import BaseRepository
 from anonflow.database.orm import Moderator
+
+from .base import BaseRepository
 
 
 @dataclass

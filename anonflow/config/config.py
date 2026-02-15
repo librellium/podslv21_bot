@@ -1,12 +1,20 @@
-from string import Template
 from pathlib import Path
+from string import Template
 
 import yaml
 from dotenv import dotenv_values
-from sqlalchemy.engine import URL
 from pydantic import BaseModel, SecretStr
+from sqlalchemy.engine import URL
 
-from .models import Behavior, Bot, Database, Forwarding, Logging, Moderation, OpenAI
+from .models import (
+    Behavior,
+    Bot,
+    Database,
+    Forwarding,
+    Logging,
+    Moderation,
+    OpenAI
+)
 
 
 class Config(BaseModel):

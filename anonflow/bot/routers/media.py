@@ -9,8 +9,15 @@ from aiogram.types import Message
 from anonflow.config import Config
 from anonflow.moderation import ModerationExecutor
 from anonflow.services.transport import MessageRouter
-from anonflow.services.transport.content import ContentMediaGroup, ContentMediaItem, MediaType
-from anonflow.services.transport.events import PostPreparedEvent, ModerationDecisionEvent
+from anonflow.services.transport.content import (
+    ContentMediaGroup,
+    ContentMediaItem,
+    MediaType
+)
+from anonflow.services.transport.events import (
+    ModerationDecisionEvent,
+    PostPreparedEvent
+)
 
 
 class MediaRouter(Router):

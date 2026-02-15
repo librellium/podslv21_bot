@@ -5,7 +5,7 @@ from aiogram.types import ChatIdUnion, Message
 
 from anonflow.translator import Translator
 
-from .content import ContentTextItem, ContentMediaGroup
+from .content import ContentMediaGroup, ContentTextItem
 from .delivery import DeliveryService
 from .events import (
     Events,

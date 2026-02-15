@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import TypeAlias, Union
 
-from .content import ContentTextItem, ContentMediaGroup, ContentMediaItem
+from .content import ContentMediaGroup, ContentMediaItem, ContentTextItem
 
 
 @dataclass(frozen=True)

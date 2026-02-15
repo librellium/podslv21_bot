@@ -2,6 +2,7 @@ from aiogram.types import InputMediaPhoto, InputMediaVideo
 
 from .content import ContentMediaItem, MediaType
 
+
 def wrap_media(item: ContentMediaItem):
     if item.type == MediaType.PHOTO:
         return InputMediaPhoto(media=item.file_id, caption=item.caption)

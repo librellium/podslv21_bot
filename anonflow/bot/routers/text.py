@@ -8,7 +8,10 @@ from anonflow.config import Config
 from anonflow.moderation import ModerationExecutor
 from anonflow.services.transport import MessageRouter
 from anonflow.services.transport.content import ContentTextItem
-from anonflow.services.transport.events import PostPreparedEvent, ModerationDecisionEvent
+from anonflow.services.transport.events import (
+    ModerationDecisionEvent,
+    PostPreparedEvent
+)
 
 
 class TextRouter(Router):

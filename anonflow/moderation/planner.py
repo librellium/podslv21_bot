@@ -1,15 +1,18 @@
 import copy
 import inspect
 import json
-import textwrap
 import logging
+import textwrap
 from typing import Any, Dict, List, Optional
 
 from openai import AsyncOpenAI
 
 from anonflow.config import Config
 
-from .exceptions import ModerationPlannerParseError, ModerationPlannerNoAvailableFunctionsError
+from .exceptions import (
+    ModerationPlannerNoAvailableFunctionsError,
+    ModerationPlannerParseError
+)
 from .rule_manager import RuleManager
 
 

@@ -1,9 +1,10 @@
 from aiogram.types import ChatIdUnion
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload, joinedload
+from sqlalchemy.orm import joinedload, selectinload
+
+from anonflow.database.orm import User
 
 from .base import BaseRepository
-from anonflow.database.orm import User
 
 
 class UserRepository(BaseRepository):
