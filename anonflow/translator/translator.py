@@ -1,26 +1,27 @@
 import gettext
 from collections import defaultdict
 from functools import lru_cache
-from typing import Optional, Literal
+from pathlib import Path
+from typing import Literal, Optional
 
 from aiogram import Bot
 from aiogram.types import Message
 
-from anonflow import __version_str__, paths
-
-
+from anonflow import __version_str__
 
 
 class Translator:
-    def __init__(self):
+    def __init__(self, translations_dir: Path):
+        self.translations_dir = translations_dir
+
         self.bot = None
 
     @staticmethod
     @lru_cache
-    def _get_translator(lang: str):
+    def _get_translator(lang: str, translations_dir: Path):
         translator = gettext.translation(
             "messages",
-            paths.TRANSLATIONS_DIR,
+            translations_dir,
             languages=[lang],
             fallback=True
         )
@@ -58,7 +59,7 @@ class Translator:
         )
 
     def get(self, lang: Literal["ru"] = "ru"):
-        translator = self._get_translator(lang)
+        translator = self._get_translator(lang, self.translations_dir)
 
         def _(msgid: str, message: Optional[Message] = None, **extra):
             return self.format(
@@ -70,4 +71,5 @@ class Translator:
         return _
 
     async def init(self, bot: Optional[Bot]):
-        if bot: self.bot = await bot.get_me()
+        if bot:
+            self.bot = await bot.get_me()
