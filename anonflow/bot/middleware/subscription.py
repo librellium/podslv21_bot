@@ -5,7 +5,7 @@ from aiogram.enums import ChatMemberStatus, ChatType
 from aiogram.types import ChatIdUnion, Message
 
 from anonflow.services import MessageRouter
-from anonflow.services.transport.events import UserSubscriptionRequiredEvent
+from anonflow.services.transport.results import UserSubscriptionRequiredResult
 
 
 class SubscriptionMiddleware(BaseMiddleware):
@@ -22,7 +22,7 @@ class SubscriptionMiddleware(BaseMiddleware):
             for channel_id in self.channel_ids:
                 member = await message.bot.get_chat_member(channel_id, user_id) # type: ignore
                 if member.status in (ChatMemberStatus.KICKED, ChatMemberStatus.LEFT):
-                    await self.message_router.dispatch(UserSubscriptionRequiredEvent(), message)
+                    await self.message_router.dispatch(UserSubscriptionRequiredResult(), message)
                     return
 
         return await handler(event, data)

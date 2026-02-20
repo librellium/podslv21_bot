@@ -3,7 +3,7 @@ from aiogram.enums import ChatType
 from aiogram.types import Message
 
 from anonflow.services import MessageRouter, UserService
-from anonflow.services.transport.events import UserNotRegisteredEvent
+from anonflow.services.transport.results import UserNotRegisteredResult
 
 
 class NotRegisteredMiddleware(BaseMiddleware):
@@ -20,7 +20,7 @@ class NotRegisteredMiddleware(BaseMiddleware):
 
             is_user_exists = await self.user_service.has(message.chat.id)
             if not is_user_exists and not text.startswith("/start"):
-                await self.message_router.dispatch(UserNotRegisteredEvent(), message)
+                await self.message_router.dispatch(UserNotRegisteredResult(), message)
                 return
 
         return await handler(event, data)

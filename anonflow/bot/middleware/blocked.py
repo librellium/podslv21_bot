@@ -2,7 +2,7 @@ from aiogram import BaseMiddleware
 from aiogram.types import Message
 
 from anonflow.services import MessageRouter, ModeratorService
-from anonflow.services.transport.events import UserBlockedEvent
+from anonflow.services.transport.results import UserBlockedResult
 
 
 class BlockedMiddleware(BaseMiddleware):
@@ -16,7 +16,7 @@ class BlockedMiddleware(BaseMiddleware):
         message = getattr(event, "message", None)
         if isinstance(message, Message):
             if await self.moderator_service.is_banned(message.chat.id):
-                await self.message_router.dispatch(UserBlockedEvent(), message)
+                await self.message_router.dispatch(UserBlockedResult(), message)
                 return
 
         return await handler(event, data)

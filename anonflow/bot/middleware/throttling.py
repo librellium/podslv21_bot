@@ -6,7 +6,7 @@ from aiogram import BaseMiddleware
 from aiogram.types import ChatIdUnion, Message
 
 from anonflow.services import MessageRouter
-from anonflow.services.transport.events import UserThrottledEvent
+from anonflow.services.transport.results import UserThrottledResult
 
 
 class ThrottlingMiddleware(BaseMiddleware):
@@ -40,7 +40,7 @@ class ThrottlingMiddleware(BaseMiddleware):
                     current_time = time.monotonic()
 
                     await self.message_router.dispatch(
-                        UserThrottledEvent(
+                        UserThrottledResult(
                             remaining_time=(
                                 round(self.delay - (current_time - start_time))
                                 if start_time else 0
