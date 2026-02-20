@@ -88,6 +88,15 @@ openai:
   # Can be provided via OPENAI_API_KEY environment variable.
   api_key: ${OPENAI_API_KEY}
 
+  # Base URL for the OpenAI API.
+  # Override this value to use a compatible API endpoint
+  # If null, the default OpenAI API endpoint is used.
+  base_url: null
+
+  # Proxy URL used for HTTP requests to the OpenAI API.
+  # If null, no proxy is configured and system network settings are used.
+  proxy: null
+
   # HTTP timeout (in seconds) for requests made.
   # If a request exceeds this timeout, the client considers it failed and
   # may retry according to `max_retries`.
