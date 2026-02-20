@@ -142,19 +142,30 @@ class Application:
             dispatcher.update.middleware(middleware)
 
     def _init_moderation(self):
-        bot = req("bot", self.bot)
         config = req("config", self.config)
 
-        if config.moderation.enabled:
-            self.rule_manager = RuleManager(rules_dir=paths.RULES_DIR)
-            self.rule_manager.reload()
+        self.rule_manager = RuleManager(rules_dir=paths.RULES_DIR)
+        self.rule_manager.reload()
 
-            self.planner = ModerationPlanner(config=config, rule_manager=self.rule_manager)
-            self.moderation_executor = ModerationExecutor(
-                config=config,
-                bot=bot,
-                planner=self.planner
-            )
+        api_key = config.openai.api_key
+        if not api_key and config.moderation.enabled:
+            raise ValueError("openai.api_key is required and cannot be empty")
+
+        base_url = config.openai.base_url
+        proxy = config.openai.proxy
+
+        self.planner = ModerationPlanner(
+            api_key=api_key.get_secret_value() if api_key else None,
+            gpt_model=config.moderation.model,
+            backends=config.moderation.backends,
+            rule_manager=self.rule_manager,
+            base_url=str(base_url) if base_url else None,
+            proxy=str(proxy) if proxy else None,
+            timeout=config.openai.timeout,
+            max_retries=config.openai.max_retries
+        )
+        self.planner.set_enabled(config.moderation.enabled)
+        self.moderation_executor = ModerationExecutor(planner=self.planner)
 
     async def init(self):
         self._init_config()
@@ -176,12 +187,13 @@ class Application:
         config = req("config", self.config)
         database = req("database", self.database)
         message_router = req("message_router", self.message_router)
+        moderation_executor = req("moderation_executor", self.moderation_executor)
 
         dispatcher.include_router(
             build_routers(
                 config=config,
                 message_router=message_router,
-                moderation_executor=self.moderation_executor,
+                moderation_executor=moderation_executor,
             )
         )
 
