@@ -1,5 +1,3 @@
-from typing import Optional
-
 from aiogram import Router
 
 from anonflow.config import Config
@@ -14,7 +12,7 @@ from .text import TextRouter
 def build(
     config: Config,
     message_router: MessageRouter,
-    moderation_executor: Optional[ModerationExecutor] = None,
+    moderation_executor: ModerationExecutor,
 ) -> Router:
     main_router = Router()
 
@@ -22,13 +20,13 @@ def build(
         StartRouter(message_router=message_router),
         InfoRouter(message_router=message_router),
         TextRouter(
-            config=config,
             message_router=message_router,
+            forwarding_types=config.forwarding.types,
             moderation_executor=moderation_executor
         ),
         MediaRouter(
-            config=config,
             message_router=message_router,
+            forwarding_types=config.forwarding.types,
             moderation_executor=moderation_executor
         ),
     ]

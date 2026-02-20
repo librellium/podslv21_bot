@@ -3,7 +3,7 @@ from aiogram.filters import Command
 from aiogram.types import Message
 
 from anonflow.services import MessageRouter
-from anonflow.services.transport.events import CommandInfoEvent
+from anonflow.services.transport.results import CommandInfoResult
 
 
 class InfoRouter(Router):
@@ -14,4 +14,4 @@ class InfoRouter(Router):
     def setup(self):
         @self.message(Command("info"))
         async def on_info(message: Message):
-            await self.message_router.dispatch(CommandInfoEvent(), message)
+            await self.message_router.dispatch(CommandInfoResult(), message)

@@ -3,7 +3,7 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message
 
 from anonflow.services import MessageRouter
-from anonflow.services.transport.events import CommandStartEvent
+from anonflow.services.transport.results import CommandStartResult
 
 
 class StartRouter(Router):
@@ -16,6 +16,6 @@ class StartRouter(Router):
         async def on_start(message: Message):
             if message.from_user:
                 await self.message_router.dispatch(
-                    CommandStartEvent(message.from_user.id),
+                    CommandStartResult(message.from_user.id),
                     message
                 )

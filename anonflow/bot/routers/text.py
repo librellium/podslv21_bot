@@ -1,51 +1,48 @@
-from typing import Optional
+from typing import FrozenSet
 
 from aiogram import F, Router
 from aiogram.enums import ChatType
 from aiogram.types import Message
 
-from anonflow.config import Config
+from anonflow.config.models import ForwardingType
 from anonflow.moderation import ModerationExecutor
 from anonflow.services.transport import MessageRouter
 from anonflow.services.transport.content import ContentTextItem
-from anonflow.services.transport.events import (
-    ModerationDecisionEvent,
-    PostPreparedEvent
+from anonflow.services.transport.results import (
+    ModerationDecisionResult,
+    PostPreparedResult
 )
 
 
 class TextRouter(Router):
     def __init__(
         self,
-        config: Config,
         message_router: MessageRouter,
-        moderation_executor: Optional[ModerationExecutor] = None,
+        forwarding_types: FrozenSet[ForwardingType],
+        moderation_executor: ModerationExecutor,
     ):
         super().__init__()
 
-        self.config = config
         self.message_router = message_router
+        self.forwarding_types = forwarding_types
         self.moderation_executor = moderation_executor
 
     def setup(self):
         @self.message(F.text)
         async def on_text(message: Message):
-            moderation = self.config.moderation.enabled
-            moderation_approved = not moderation
-
             if (
                 message.chat.type == ChatType.PRIVATE
-                and "text" in self.config.forwarding.types
+                and "text" in self.forwarding_types
             ):
-                executor = self.moderation_executor
-                if moderation and executor:
-                    async for event in executor.process_message(message):
-                        if isinstance(event, ModerationDecisionEvent):
-                            moderation_approved = event.approved
-                        await self.message_router.dispatch(event, message)
+                moderation_approved = False
+
+                async for result in self.moderation_executor.process_message(message):
+                    if isinstance(result, ModerationDecisionResult):
+                        moderation_approved = result.is_approved
+                    await self.message_router.dispatch(result, message)
 
                 await self.message_router.dispatch(
-                    PostPreparedEvent(
+                    PostPreparedResult(
                         ContentTextItem(message.text or ""),
                         moderation_approved
                     ),
