@@ -1,10 +1,10 @@
 from pathlib import Path
-from typing import Literal, Optional, Tuple, TypeAlias, Union
+from typing import FrozenSet, Literal, Optional, Tuple, TypeAlias, Union
 
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import BaseModel, Field, HttpUrl, SecretStr
 
 ForwardingType: TypeAlias = Literal["text", "photo", "video"]
-ModerationType: TypeAlias = Literal["omni", "gpt"]
+ModerationBackend: TypeAlias = Literal["omni", "gpt"]
 LoggingLevel: TypeAlias = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
@@ -22,7 +22,7 @@ class BehaviorThrottling(BaseModel):
 
 class BehaviorSubscriptionRequirement(BaseModel):
     enabled: bool = True
-    channel_ids: Tuple[int] = Field(default_factory=tuple)
+    channel_ids: Tuple[int, ...] = Field(default_factory=tuple)
     model_config = {"frozen": True}
 
 
@@ -61,14 +61,16 @@ class Database(BaseModel):
 
 
 class Forwarding(BaseModel):
-    moderation_chat_ids: Tuple[int] = Field(default_factory=tuple)
-    publication_channel_ids: Tuple[int] = Field(default_factory=tuple)
-    types: Tuple[ForwardingType, ...] = ("text", "photo", "video")
+    moderation_chat_ids: Tuple[int, ...] = Field(default_factory=tuple)
+    publication_channel_ids: Tuple[int, ...] = Field(default_factory=tuple)
+    types: FrozenSet[ForwardingType] = frozenset(["text", "photo", "video"])
     model_config = {"frozen": True}
 
 
 class OpenAI(BaseModel):
     api_key: Optional[SecretStr] = None
+    base_url: Optional[HttpUrl] = None
+    proxy: Optional[HttpUrl] = None
     timeout: int = 10
     max_retries: int = 0
     model_config = {"frozen": True}
@@ -77,7 +79,7 @@ class OpenAI(BaseModel):
 class Moderation(BaseModel):
     enabled: bool = True
     model: str = "gpt-5-mini"
-    types: Tuple[ModerationType, ...] = ("omni", "gpt")
+    backends: FrozenSet[ModerationBackend] = frozenset(["omni", "gpt"])
     model_config = {"frozen": True}
 
 
