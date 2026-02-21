@@ -8,10 +8,12 @@ from anonflow.services import (
     UserService
 )
 
-from .blocked import BlockedMiddleware
-from .not_registered import NotRegisteredMiddleware
-from .subscription import SubscriptionMiddleware
-from .throttling import ThrottlingMiddleware
+from anonflow.bot.middleware import (
+    BlockedMiddleware,
+    NotRegisteredMiddleware,
+    SubscriptionMiddleware,
+    ThrottlingMiddleware
+)
 
 def build(
     message_router: MessageRouter,

@@ -4,10 +4,12 @@ from anonflow.config import Config
 from anonflow.moderation import ModerationExecutor
 from anonflow.services import MessageRouter
 
-from .info import InfoRouter
-from .media import MediaRouter
-from .start import StartRouter
-from .text import TextRouter
+from anonflow.bot.routers import (
+    InfoRouter,
+    MediaRouter,
+    StartRouter,
+    TextRouter
+)
 
 def build(
     config: Config,
