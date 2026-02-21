@@ -48,6 +48,8 @@ class Moderator(Base):
     can_manage_bans = Column(Boolean, nullable=False, default=False)
     can_manage_moderators = Column(Boolean, nullable=False, default=False)
 
+    is_root = Column(Boolean, nullable=False, default=False)
+
     user = relationship("User", back_populates="moderator")
 
 class User(Base):
