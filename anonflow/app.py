@@ -7,8 +7,8 @@ from aiogram.client.bot import DefaultBotProperties
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from anonflow import __version_str__
-from anonflow.bot.middleware import build as build_middleware
-from anonflow.bot.routers import build as build_routers
+from anonflow.bot.builders.middleware import build as build_middleware
+from anonflow.bot.builders.routers import build as build_routers
 from anonflow.config import Config
 from anonflow.database import (
     BanRepository,
