@@ -14,7 +14,7 @@ class UserService:
 
     async def add(self, user_id: int):
         try:
-            async with self._database.get_session() as session:
+            async with self._database.begin_session() as session:
                 await self._user_repository.add(session, user_id)
         except IntegrityError:
             self._logger.warning("Failed to add user user_id=%s", user_id)
@@ -29,14 +29,14 @@ class UserService:
 
     async def remove(self, user_id: int):
         try:
-            async with self._database.get_session() as session:
+            async with self._database.begin_session() as session:
                 await self._user_repository.remove(session, user_id)
         except IntegrityError:
             self._logger.warning("Failed to remove user user_id=%s", user_id)
 
     async def update(self, user_id: int, **fields):
         try:
-            async with self._database.get_session() as session:
+            async with self._database.begin_session() as session:
                 await self._user_repository.update(session, user_id, **fields)
         except IntegrityError:
             self._logger.warning("Failed to update user user_id=%s", user_id)

@@ -13,9 +13,8 @@ class BaseRepository:
         )
 
     async def _add(self, session: AsyncSession, model_args: Dict[str, Any]):
-        async with session.begin():
-            obj = self.model(**model_args)
-            session.add(obj)
+        obj = self.model(**model_args)
+        session.add(obj)
 
     async def _get(self, session: AsyncSession, filters: Dict[str, Any], options: List[Any] = []):
         result = await session.execute(
@@ -35,19 +34,17 @@ class BaseRepository:
         return bool(result.scalar_one_or_none())
 
     async def _remove(self, session: AsyncSession, filters: Dict[str, Any]):
-        async with session.begin():
-            await session.execute(
-                delete(self.model)
-                .filter_by(**filters)
-            )
+        await session.execute(
+            delete(self.model)
+            .filter_by(**filters)
+        )
 
     async def _update(self, session: AsyncSession, filters: Dict[str, Any], fields: Dict[str, Any]):
         if not fields:
             return
 
-        async with session.begin():
-            await session.execute(
-                update(self.model)
-                .filter_by(**filters)
-                .values(**fields)
-            )
+        await session.execute(
+            update(self.model)
+            .filter_by(**filters)
+            .values(**fields)
+        )
