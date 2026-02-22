@@ -71,12 +71,12 @@ class MessageRouter:
                     await self.delivery_service.send_media(chat_id, items[0])
 
         if result.moderation_approved:
-            await message.answer(_("messages.user.send_success", message=message))
+            await message.answer(_("messages.user.moderation_approved", message=message))
 
     async def _handle_moderation_started(self, result: ModerationStartedResult, message: Message, _):
         await self.delivery_service.send_text(
             message.chat.id,
-            _("messages.user.moderation_pending", message=message)
+            _("messages.user.moderation_started", message=message)
         )
 
     async def _handle_moderation_decision(self, result: ModerationDecisionResult, message: Message, _):
@@ -107,10 +107,10 @@ class MessageRouter:
             )
 
     async def _handle_user_banned(self, result: UserBannedResult, message: Message, _):
-        await self.delivery_service.send_text(message.chat.id, _("messages.user.blocked", message))
+        await self.delivery_service.send_text(message.chat.id, _("messages.user.banned", message))
 
     async def _handle_user_not_registered(self, result: UserNotRegisteredResult, message: Message, _):
-        await self.delivery_service.send_text(message.chat.id, _("messages.user.start_required", message))
+        await self.delivery_service.send_text(message.chat.id, _("messages.user.not_registered", message))
 
     async def _handle_user_subscription_required(self, result: UserSubscriptionRequiredResult, message: Message, _):
         await self.delivery_service.send_text(message.chat.id, _("messages.user.subscription_required", message))
@@ -119,7 +119,7 @@ class MessageRouter:
         await self.delivery_service.send_text(
             message.chat.id,
             _(
-                "messages.user.send_busy",
+                "messages.user.throttled",
                 message,
                 remaining=result.remaining_time
             )

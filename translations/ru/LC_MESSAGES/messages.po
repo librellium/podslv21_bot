@@ -1,16 +1,16 @@
 # Russian translations for anonflow.
-# Copyright (C) 2025 Librellium
+# Copyright (C) 2026 Librellium
 # This file is distributed under the same license as the anonflow project.
-# Librellium 246878136+librellium@users.noreply.github.com, 2025.
+# Librellium 246878136+librellium@users.noreply.github.com, 2026.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version:  0.2.4\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-01-25 22:49+0500\n"
-"PO-Revision-Date: 2025-12-14 14:11+0500\n"
+"Project-Id-Version:  0.5.0\n"
+"Report-Msgid-Bugs-To: 246878136+librellium@users.noreply.github.com\n"
+"POT-Creation-Date: 2026-02-22 12:26+0500\n"
+"PO-Revision-Date: 2026-02-22 12:28+0500\n"
 "Last-Translator: Librellium 246878136+librellium@users.noreply.github.com\n"
-"Language-Team: Russian <LL@li.org>\n"
+"Language-Team: Russian <Librellium>, https://librellium.space\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -19,51 +19,7 @@ msgstr ""
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: anonflow/bot/messaging/message_sender.py:63
-msgid "messages.user.send_success"
-msgstr "Сообщение успешно отправлено!"
-
-#: anonflow/bot/messaging/message_sender.py:67
-msgid "messages.user.moderation_pending"
-msgstr "Сообщение отправлено на модерацию, ожидайте..."
-
-#: anonflow/bot/messaging/message_sender.py:78
-msgid "messages.staff.moderation_approved"
-msgstr ""
-"Сообщение ниже было отправлено.\n"
-"Объяснение: {explanation}"
-
-#: anonflow/bot/messaging/message_sender.py:87
-msgid "messages.staff.moderation_rejected"
-msgstr ""
-"Сообщение ниже было отклонено.\n"
-"Объяснение: {explanation}"
-
-#: anonflow/bot/messaging/message_sender.py:99
-msgid "messages.user.moderation_rejected"
-msgstr ""
-"Извините, но сообщение не прошло модерацию. "
-"Оно было отправлено на ручную проверку."
-
-#: anonflow/bot/middleware/blocked.py:25
-msgid "messages.user.blocked"
-msgstr "Извините, но вы были заблокированы. Отправка сообщений недоступна."
-
-#: anonflow/bot/middleware/registered.py:27
-msgid "messages.user.start_required"
-msgstr "Для продолжения пропишите /start."
-
-#: anonflow/bot/middleware/subscription.py:29
-msgid "messages.user.subscription_required"
-msgstr "Вам нужно быть участником канала, чтобы отправлять сообщения!"
-
-#: anonflow/bot/middleware/throttling.py:47
-msgid "messages.user.send_busy"
-msgstr ""
-"Вы уже недавно отправляли сообщение! Пожалуйста, подождите {remaining} "
-"секунд перед следующей попыткой."
-
-#: anonflow/bot/routers/info.py:20
+#: anonflow/services/transport/router.py:50
 msgid "messages.user.command_info"
 msgstr ""
 "<b>Anonflow</b> v{bot_version}\n"
@@ -72,23 +28,63 @@ msgstr ""
 "<b>Ваше имя</b>: {full_name}\n"
 "<b>Ваш username</b>: {username}"
 
-#: anonflow/bot/routers/media.py:73
-msgid "messages.channel.media"
-msgstr ""
-"<b>Сообщение из предложки</b>\n"
-"\n"
-"<blockquote>{text}</blockquote>"
-
-#: anonflow/bot/routers/start.py:21
+#: anonflow/services/transport/router.py:53
 msgid "messages.user.command_start"
 msgstr ""
 "<b>Привет {username}!</b>\n"
-"Ты можешь отправить мне сообщение, и я передам его в прикрепленный канал, не "
-"раскрывая твою личность."
+"Ты можешь отправить мне сообщение, и я передам его в прикрепленный "
+"канал, не раскрывая твою личность."
 
-#: anonflow/bot/routers/text.py:55
+#: anonflow/services/transport/router.py:65
 msgid "messages.channel.text"
 msgstr ""
 "<b>Сообщение из предложки</b>\n"
 "\n"
 "<blockquote>{text}</blockquote>"
+
+#: anonflow/services/transport/router.py:74
+msgid "messages.user.moderation_approved"
+msgstr "Сообщение успешно отправлено!"
+
+#: anonflow/services/transport/router.py:79
+msgid "messages.user.moderation_started"
+msgstr "Сообщение отправлено на модерацию, ожидайте..."
+
+#: anonflow/services/transport/router.py:88
+msgid "messages.staff.moderation_approved"
+msgstr ""
+"Сообщение ниже было отправлено.\n"
+"\n"
+"Объяснение: {explanation}"
+
+#: anonflow/services/transport/router.py:97
+msgid "messages.staff.moderation_rejected"
+msgstr ""
+"Сообщение ниже было отклонено.\n"
+"\n"
+"Объяснение: {explanation}"
+
+#: anonflow/services/transport/router.py:106
+msgid "messages.user.moderation_rejected"
+msgstr ""
+"Извините, но сообщение не прошло модерацию. "
+"Оно было отправлено на ручную проверку."
+
+#: anonflow/services/transport/router.py:110
+msgid "messages.user.banned"
+msgstr "Извините, но вы были заблокированы. Отправка сообщений недоступна."
+
+#: anonflow/services/transport/router.py:113
+msgid "messages.user.not_registered"
+msgstr "Для продолжения пропишите /start."
+
+#: anonflow/services/transport/router.py:116
+msgid "messages.user.subscription_required"
+msgstr "Вам нужно быть участником канала, чтобы отправлять сообщения!"
+
+#: anonflow/services/transport/router.py:122
+msgid "messages.user.throttled"
+msgstr ""
+"Вы уже недавно отправляли сообщение! Пожалуйста, подождите {remaining} "
+"секунд перед следующей попыткой."
+
