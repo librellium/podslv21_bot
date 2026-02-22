@@ -3,7 +3,6 @@ from typing import Any, Callable, Dict, Tuple
 
 from aiogram.types import ChatIdUnion, Message
 
-from anonflow.services.accounts import UserService, ModeratorService
 from anonflow.translator import Translator
 
 from .content import ContentMediaGroup, ContentTextItem
@@ -28,15 +27,11 @@ class MessageRouter:
         moderation_chat_ids: Tuple[ChatIdUnion],
         publication_channel_ids: Tuple[ChatIdUnion],
         delivery_service: DeliveryService,
-        user_service: UserService,
-        moderator_service: ModeratorService,
         translator: Translator
     ):
         self.moderation_chat_ids = moderation_chat_ids
         self.publication_channel_ids = publication_channel_ids
         self.delivery_service = delivery_service
-        self.user_service = user_service
-        self.moderator_service = moderator_service
         self.translator = translator
 
         self._handlers: Dict[Any, Callable] = {
@@ -55,7 +50,6 @@ class MessageRouter:
         await self.delivery_service.send_text(message.chat.id, _("messages.user.command_info", message=message))
 
     async def _handle_command_start(self, result: CommandStartResult, message: Message, _):
-        await self.user_service.add(result.user_id)
         await self.delivery_service.send_text(message.chat.id, _("messages.user.command_start", message=message))
 
     async def _handle_post_prepared(self, result: PostPreparedResult, message: Message, _):

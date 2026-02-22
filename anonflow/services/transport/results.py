@@ -14,7 +14,7 @@ class CommandInfoResult(Result):
 
 @dataclass(frozen=True)
 class CommandStartResult(Result):
-    user_id: int
+    pass
 
 @dataclass(frozen=True)
 class PostPreparedResult(Result):

@@ -114,14 +114,12 @@ class Application:
 
     def _init_transport(self):
         with require(
-            self, "bot", "config", "user_service", "moderator_service", "translator"
-        ) as (bot, config, user_service, moderator_service, translator):
+            self, "bot", "config", "translator"
+        ) as (bot, config, translator):
             self.message_router = MessageRouter(
                 moderation_chat_ids=config.forwarding.moderation_chat_ids,
                 publication_channel_ids=config.forwarding.publication_channel_ids,
                 delivery_service=DeliveryService(bot),
-                user_service=user_service,
-                moderator_service=moderator_service,
                 translator=translator
             )
 
@@ -193,12 +191,23 @@ class Application:
         self._logger.info(f"Anonflow v{__version_str__} has been successfully initialized.")
 
         with require(
-            self, "bot", "dispatcher", "config", "database", "message_router", "moderation_planner", "moderation_executor"
-        ) as (bot, dispatcher, config, database, message_router, moderation_planner, moderation_executor):
+            self,
+            "bot", "dispatcher", "config",
+            "database", "message_router",
+            "user_service", "moderator_service",
+            "moderation_planner", "moderation_executor"
+        ) as (
+            bot, dispatcher, config,
+            database, message_router,
+            user_service, moderator_service,
+            moderation_planner, moderation_executor
+        ):
             dispatcher.include_router(
                 build_routers(
                     config=config,
                     message_router=message_router,
+                    user_service=user_service,
+                    moderator_service=moderator_service,
                     moderation_executor=moderation_executor,
                 )
             )
