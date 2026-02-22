@@ -90,6 +90,7 @@ class Application:
                 BanRepository(),
                 ModeratorRepository()
             )
+            await self.moderator_service.init()
             self.user_service = UserService(
                 self.database,
                 UserRepository()
