@@ -44,7 +44,7 @@ class Moderator(Base):
 
     user_id = Column(Integer, ForeignKey("users.user_id"), primary_key=True)
 
-    can_approve_posts = Column(Boolean, nullable=False, default=True)
+    can_approve_posts = Column(Boolean, nullable=False, default=False)
     can_manage_bans = Column(Boolean, nullable=False, default=False)
     can_manage_moderators = Column(Boolean, nullable=False, default=False)
 
